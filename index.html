@@ -8,7 +8,7 @@
     <meta property="og:description" content="登录深情俱乐部">
     <meta property="og:type" content="website">
     <title>深情俱乐部</title>
-    <link rel="stylesheet" href="styles.css?v=4">
+    <link rel="stylesheet" href="styles.css?v=5">
     <script src="app.js?v=5" defer></script>
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" defer></script>
   </head>
@@ -29,15 +29,10 @@
                 <span>写下你的名字，从这里开始。</span>
               </header>
 
-              <form class="page-form" id="registerForm" autocomplete="on">
+              <form class="page-form register-form" id="registerForm" autocomplete="on">
                 <label class="page-field" for="registerUsername">
                   <span>账号</span>
                   <input id="registerUsername" name="username" type="text" autocomplete="username" required minlength="2" maxlength="24" placeholder="2-24 位字符">
-                </label>
-
-                <label class="page-field" for="registerEmail">
-                  <span>邮箱</span>
-                  <input id="registerEmail" name="email" type="email" autocomplete="email" required maxlength="254" placeholder="用于绑定账号">
                 </label>
 
                 <label class="page-field" for="registerPassword">
@@ -48,6 +43,11 @@
                 <label class="page-field" for="confirmPassword">
                   <span>确认密码</span>
                   <input id="confirmPassword" name="confirmPassword" type="password" autocomplete="new-password" required minlength="8" maxlength="128" placeholder="再次输入密码">
+                </label>
+
+                <label class="page-field" for="registerEmail">
+                  <span>邮箱</span>
+                  <input id="registerEmail" name="email" type="email" autocomplete="email" required maxlength="254" placeholder="用于绑定账号">
                 </label>
 
                 <div class="turnstile-row">

@@ -384,6 +384,26 @@ button {
   padding-top: clamp(16px, 2.5vh, 22px);
 }
 
+.register-form {
+  gap: clamp(7px, 1.1vh, 10px);
+  padding-top: clamp(10px, 1.5vh, 14px);
+}
+
+.register-form > .page-field {
+  grid-template-columns: 74px minmax(0, 1fr);
+  align-items: end;
+  gap: 10px;
+}
+
+.register-form > .page-field > span {
+  padding-bottom: 10px;
+}
+
+.register-form .page-field input,
+.register-form .send-code-button {
+  height: 36px;
+}
+
 .page-field {
   display: grid;
   gap: 6px;
@@ -428,6 +448,17 @@ button {
   gap: 12px;
 }
 
+.register-form .email-code-row .page-field {
+  grid-template-columns: 74px minmax(0, 1fr);
+  align-items: end;
+  gap: 10px;
+}
+
+.register-form .email-code-row .page-field > span {
+  padding-bottom: 10px;
+  white-space: nowrap;
+}
+
 .send-code-button {
   height: 42px;
   border: 1px solid #817465;
@@ -453,6 +484,12 @@ button {
 .turnstile-row {
   display: grid;
   gap: 7px;
+}
+
+.register-form .turnstile-row {
+  grid-template-columns: 74px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
 }
 
 #turnstileWidget {
@@ -575,13 +612,8 @@ button:focus-visible {
   }
 
   .page-panel {
-    overflow-y: auto;
+    overflow-y: hidden;
     padding: 14px 25px 16px;
-    scrollbar-width: none;
-  }
-
-  .page-panel::-webkit-scrollbar {
-    display: none;
   }
 
   .close-book {
@@ -618,6 +650,11 @@ button:focus-visible {
     padding-top: 8px;
   }
 
+  .register-form {
+    gap: 4px;
+    padding-top: 5px;
+  }
+
   .page-field {
     gap: 2px;
   }
@@ -630,6 +667,23 @@ button:focus-visible {
   .page-field input {
     height: 31px;
     font-size: 13px;
+  }
+
+  .register-form > .page-field,
+  .register-form .email-code-row .page-field,
+  .register-form .turnstile-row {
+    grid-template-columns: 64px minmax(0, 1fr);
+    gap: 7px;
+  }
+
+  .register-form > .page-field > span,
+  .register-form .email-code-row .page-field > span {
+    padding-bottom: 7px;
+  }
+
+  .register-form .page-field input,
+  .register-form .send-code-button {
+    height: 29px;
   }
 
   .email-code-row {
@@ -647,7 +701,7 @@ button:focus-visible {
   }
 
   #turnstileWidget {
-    min-height: 60px;
+    min-height: 58px;
   }
 
   .page-submit {
@@ -655,7 +709,7 @@ button:focus-visible {
   }
 
   .page-form .form-message {
-    min-height: 15px;
+    min-height: 13px;
     font-size: 10px;
   }
 
