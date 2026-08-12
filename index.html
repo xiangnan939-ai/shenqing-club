@@ -3,76 +3,68 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="深情.club">
+    <meta name="description" content="登录深情.club">
     <meta property="og:title" content="深情.club">
-    <meta property="og:description" content="深情.club">
-    <meta property="og:image" content="assets/hero.png">
+    <meta property="og:description" content="登录深情.club">
     <meta property="og:type" content="website">
-    <title>深情.club</title>
-    <link rel="preload" href="assets/hero.png" as="image">
+    <title>登录 · 深情.club</title>
     <link rel="stylesheet" href="styles.css">
     <script src="app.js" defer></script>
   </head>
-  <body class="auth-loading">
-    <section class="auth-view" aria-labelledby="authTitle">
-      <div class="photo-side">
-        <img src="assets/hero.png" alt="暮色中的海岸与山路" width="1672" height="941">
+  <body>
+    <header class="site-header">
+      <a class="brand" href="/" aria-label="深情.club 登录页">
+        <span class="brand-mark" aria-hidden="true">深</span>
+        <span>深情.club</span>
+      </a>
+      <span class="site-status">PRIVATE SPACE</span>
+    </header>
 
-        <a class="brand" href="/" aria-label="深情.club 首页">
-          <span class="brand-mark" aria-hidden="true">深</span>
-          <span>深情.club</span>
-        </a>
+    <main class="auth-page">
+      <p class="backdrop-word" aria-hidden="true">深情</p>
 
-        <div class="photo-caption">
-          <p>SHENQING · PRIVATE SPACE</p>
-          <h2>去看海，<br>直到世界安静。</h2>
+      <section class="auth-dialog" aria-labelledby="authTitle">
+        <header class="dialog-heading">
+          <p class="dialog-kicker">WELCOME</p>
+          <h1 id="authTitle">登录</h1>
+          <p id="authDescription">进入你的私人空间</p>
+        </header>
+
+        <div class="auth-tabs" role="tablist" aria-label="账号操作">
+          <button class="auth-tab is-active" type="button" role="tab" aria-selected="true" data-auth-mode="login">登录</button>
+          <button class="auth-tab" type="button" role="tab" aria-selected="false" data-auth-mode="register">注册</button>
         </div>
-      </div>
 
-      <main class="auth-side">
-        <div class="auth-content">
-          <header class="auth-heading">
-            <p class="section-label">PRIVATE ACCESS</p>
-            <h1 id="authTitle">欢迎回来</h1>
-            <p id="authDescription">登录后，继续看那片海。</p>
-          </header>
-
-          <div class="auth-tabs" role="tablist" aria-label="账号操作">
-            <button class="auth-tab is-active" type="button" role="tab" aria-selected="true" data-auth-mode="login">登录</button>
-            <button class="auth-tab" type="button" role="tab" aria-selected="false" data-auth-mode="register">注册</button>
+        <form class="auth-form" id="authForm" autocomplete="on">
+          <div class="form-field">
+            <label for="username">账号</label>
+            <input id="username" name="username" type="text" autocomplete="username" required minlength="2" maxlength="24" placeholder="输入账号">
           </div>
 
-          <form class="auth-form" id="authForm" autocomplete="on">
-            <div class="form-field">
-              <label for="username">账号</label>
-              <input id="username" name="username" type="text" autocomplete="username" required minlength="2" maxlength="24" placeholder="请输入账号">
-            </div>
+          <div class="form-field">
+            <label for="password">密码</label>
+            <input id="password" name="password" type="password" autocomplete="current-password" required minlength="6" placeholder="至少 6 位字符">
+          </div>
 
-            <div class="form-field">
-              <label for="password">密码</label>
-              <input id="password" name="password" type="password" autocomplete="current-password" required minlength="6" placeholder="至少 6 位字符">
-            </div>
+          <div class="form-field register-only is-hidden">
+            <label for="confirmPassword">确认密码</label>
+            <input id="confirmPassword" name="confirmPassword" type="password" autocomplete="new-password" minlength="6" placeholder="再次输入密码">
+          </div>
 
-            <div class="form-field register-only is-hidden">
-              <label for="confirmPassword">确认密码</label>
-              <input id="confirmPassword" name="confirmPassword" type="password" autocomplete="new-password" minlength="6" placeholder="再次输入密码">
-            </div>
+          <p class="auth-message" id="authMessage" aria-live="polite"></p>
+          <button class="auth-submit" type="submit">
+            <span>进入</span>
+            <span aria-hidden="true">→</span>
+          </button>
+        </form>
 
-            <p class="auth-message" id="authMessage" aria-live="polite"></p>
-            <button class="auth-submit" type="submit">登录</button>
-          </form>
-
-          <p class="auth-note">账号信息仅保存在当前设备</p>
-        </div>
-      </main>
-    </section>
-
-    <main class="app-view" aria-label="深情.club">
-      <div class="app-bar">
-        <span id="currentUser"></span>
-        <button type="button" id="logoutButton">退出</button>
-      </div>
-      <img src="assets/hero.png" alt="暮色海岸与山路" width="1672" height="941">
+        <p class="auth-note">账号仅保存在当前浏览器</p>
+      </section>
     </main>
+
+    <footer class="site-footer">
+      <span>深情.club</span>
+      <span>2026</span>
+    </footer>
   </body>
 </html>

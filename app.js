@@ -3,15 +3,12 @@ const STORAGE_KEYS = {
   session: 'shenqingSession',
 };
 
-const body = document.body;
 const authForm = document.querySelector('#authForm');
 const tabs = document.querySelectorAll('[data-auth-mode]');
-const submitButton = document.querySelector('.auth-submit');
+const submitLabel = document.querySelector('.auth-submit span:first-child');
 const message = document.querySelector('#authMessage');
 const authTitle = document.querySelector('#authTitle');
 const authDescription = document.querySelector('#authDescription');
-const currentUser = document.querySelector('#currentUser');
-const logoutButton = document.querySelector('#logoutButton');
 const registerOnlyFields = document.querySelectorAll('.register-only');
 const passwordInput = document.querySelector('#password');
 const confirmPasswordInput = document.querySelector('#confirmPassword');
@@ -35,28 +32,22 @@ function setMessage(text, tone = 'neutral') {
   message.dataset.tone = tone;
 }
 
-function showApp(username) {
-  body.classList.remove('auth-loading');
-  body.classList.add('is-authenticated');
-  currentUser.textContent = username;
-}
-
-function showAuth() {
-  body.classList.remove('auth-loading', 'is-authenticated');
-  currentUser.textContent = '';
-}
-
 function normalizeUsername(value) {
   return value.trim().toLowerCase();
+}
+
+function enterMain(username) {
+  localStorage.setItem(STORAGE_KEYS.session, username);
+  window.location.replace('main.html');
 }
 
 function switchMode(nextMode) {
   mode = nextMode;
   setMessage('');
   authForm.reset();
-  authTitle.textContent = mode === 'login' ? '欢迎回来' : '创建账号';
-  authDescription.textContent = mode === 'login' ? '登录后，继续看那片海。' : '只需一步，留住这一刻。';
-  submitButton.textContent = mode === 'login' ? '登录' : '创建账号';
+  authTitle.textContent = mode === 'login' ? '登录' : '创建账号';
+  authDescription.textContent = mode === 'login' ? '进入你的私人空间' : '创建一个仅属于此设备的账号';
+  submitLabel.textContent = mode === 'login' ? '进入' : '完成注册';
   passwordInput.autocomplete = mode === 'login' ? 'current-password' : 'new-password';
   confirmPasswordInput.required = mode === 'register';
 
@@ -73,7 +64,7 @@ function switchMode(nextMode) {
 
 function register(username, password, confirmPassword) {
   if (password !== confirmPassword) {
-    setMessage('两次密码不一致。', 'error');
+    setMessage('两次输入的密码不一致。', 'error');
     return;
   }
 
@@ -85,8 +76,7 @@ function register(username, password, confirmPassword) {
 
   users[username] = { password };
   writeUsers(users);
-  localStorage.setItem(STORAGE_KEYS.session, username);
-  showApp(username);
+  enterMain(username);
 }
 
 function login(username, password) {
@@ -96,8 +86,7 @@ function login(username, password) {
     return;
   }
 
-  localStorage.setItem(STORAGE_KEYS.session, username);
-  showApp(username);
+  enterMain(username);
 }
 
 tabs.forEach((tab) => {
@@ -124,16 +113,9 @@ authForm.addEventListener('submit', (event) => {
   login(username, password);
 });
 
-logoutButton.addEventListener('click', () => {
-  localStorage.removeItem(STORAGE_KEYS.session);
-  switchMode('login');
-  showAuth();
-});
-
 const activeSession = localStorage.getItem(STORAGE_KEYS.session);
 if (activeSession && readUsers()[activeSession]) {
-  showApp(activeSession);
+  window.location.replace('main.html');
 } else {
   localStorage.removeItem(STORAGE_KEYS.session);
-  showAuth();
 }
