@@ -385,23 +385,23 @@ button {
 }
 
 .register-form {
-  gap: clamp(7px, 1.1vh, 10px);
-  padding-top: clamp(10px, 1.5vh, 14px);
+  gap: clamp(11px, 1.7vh, 15px);
+  padding-top: clamp(15px, 2.2vh, 20px);
 }
 
 .register-form > .page-field {
-  grid-template-columns: 74px minmax(0, 1fr);
+  grid-template-columns: 82px minmax(0, 1fr);
   align-items: end;
-  gap: 10px;
+  gap: 14px;
 }
 
 .register-form > .page-field > span {
-  padding-bottom: 10px;
+  padding-bottom: 12px;
 }
 
 .register-form .page-field input,
 .register-form .send-code-button {
-  height: 36px;
+  height: 42px;
 }
 
 .page-field {
@@ -442,19 +442,19 @@ button {
 
 .email-code-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 112px;
+  grid-template-columns: minmax(0, 1fr) 124px;
   align-items: end;
-  gap: 12px;
+  gap: 14px;
 }
 
 .register-form .email-code-row .page-field {
-  grid-template-columns: 74px minmax(0, 1fr);
+  grid-template-columns: 82px minmax(0, 1fr);
   align-items: end;
-  gap: 10px;
+  gap: 14px;
 }
 
 .register-form .email-code-row .page-field > span {
-  padding-bottom: 10px;
+  padding-bottom: 12px;
   white-space: nowrap;
 }
 
@@ -727,8 +727,8 @@ button:focus-visible {
   }
 
   .register-form {
-    gap: 4px;
-    padding-top: 5px;
+    gap: 7px;
+    padding-top: 9px;
   }
 
   .page-field {
@@ -746,28 +746,28 @@ button:focus-visible {
 
   .register-form > .page-field,
   .register-form .email-code-row .page-field {
-    grid-template-columns: 64px minmax(0, 1fr);
-    gap: 7px;
+    grid-template-columns: 70px minmax(0, 1fr);
+    gap: 10px;
   }
 
   .register-form > .page-field > span,
   .register-form .email-code-row .page-field > span {
-    padding-bottom: 7px;
+    padding-bottom: 9px;
   }
 
   .register-form .page-field input,
   .register-form .send-code-button {
-    height: 29px;
+    height: 34px;
   }
 
   .email-code-row {
-    grid-template-columns: minmax(0, 1fr) 96px;
-    gap: 8px;
+    grid-template-columns: minmax(0, 1fr) 104px;
+    gap: 10px;
   }
 
   .send-code-button {
-    height: 31px;
-    font-size: 9px;
+    height: 34px;
+    font-size: 10px;
   }
 
   .page-submit {
@@ -775,7 +775,7 @@ button:focus-visible {
   }
 
   .page-form .form-message {
-    min-height: 13px;
+    min-height: 15px;
     font-size: 10px;
   }
 
