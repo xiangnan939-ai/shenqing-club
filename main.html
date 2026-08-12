@@ -8,12 +8,30 @@
     <meta property="og:title" content="深情俱乐部">
     <meta property="og:type" content="website">
     <title>深情俱乐部</title>
-    <link rel="stylesheet" href="main.css?v=4">
-    <script src="main.js?v=4" defer></script>
+    <link rel="stylesheet" href="main.css?v=5">
+    <link rel="stylesheet" href="zhao-game.css?v=1">
+    <script src="main.js?v=5" defer></script>
+    <script src="zhao-game.js?v=1" defer></script>
   </head>
   <body class="session-loading">
     <main class="app-shell" aria-label="深情俱乐部主界面">
-      <section class="app-view is-active" id="entertainmentView" data-view="entertainment" aria-label="娱乐"></section>
+      <section class="app-view is-active" id="entertainmentView" data-view="entertainment" aria-labelledby="entertainmentTitle">
+        <header class="view-header">
+          <div>
+            <p>PLAYGROUND</p>
+            <h1 id="entertainmentTitle">娱乐</h1>
+          </div>
+        </header>
+
+        <div class="entertainment-content">
+          <button class="game-launcher" id="openZhaoGame" type="button" aria-label="打开赵云与阿斗">
+            <span class="game-icon-crop">
+              <img src="assets/zhao-yun-a-dou-icon.png" alt="" width="199" height="250">
+            </span>
+            <span>赵云与阿斗</span>
+          </button>
+        </div>
+      </section>
 
       <section class="app-view" id="friendsView" data-view="friends" aria-labelledby="friendsTitle" hidden>
         <header class="view-header friends-header">
@@ -133,5 +151,105 @@
 
       <p class="app-toast" id="appToast" role="status" aria-live="polite"></p>
     </main>
+
+    <section class="zhao-game" id="zhaoGame" aria-label="赵云与阿斗游戏" hidden>
+      <div class="zy-game-shell">
+        <header class="zy-topbar">
+          <button class="zy-icon-button" id="closeZhaoGame" type="button" aria-label="退出游戏" title="退出游戏">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"></path></svg>
+          </button>
+
+          <div class="zy-wave-title">
+            <small>长坂坡</small>
+            <strong id="zyWaveLabel">第 1 波</strong>
+          </div>
+
+          <div class="zy-resource" aria-label="馒头">
+            <span aria-hidden="true">馒</span>
+            <b id="zyBuns">40</b>
+          </div>
+
+          <button class="zy-icon-button" id="restartZhaoGame" type="button" aria-label="重新开始" title="重新开始">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"></path><path d="M3 3v5h5"></path></svg>
+          </button>
+        </header>
+
+        <main class="zy-battlefield">
+          <section class="zy-fort zy-fort-enemy" aria-label="敌军阿斗">
+            <div class="zy-fort-name"><span>曹军</span><strong>阿斗</strong></div>
+            <div class="zy-hearts" id="zyEnemyHearts" aria-label="敌军三条命"></div>
+          </section>
+
+          <div class="zy-enemy-ranks" id="zyEnemyRanks" aria-label="来袭敌军"></div>
+
+          <section class="zy-clash-zone" aria-label="交战区">
+            <div class="zy-path-line" aria-hidden="true"></div>
+            <div class="zy-clash-status">
+              <strong id="zyEnemyType">黄巾 · 刀兵</strong>
+              <span id="zyBattleTimer">来袭 18 秒</span>
+            </div>
+            <div class="zy-health-track" aria-label="来袭敌军生命">
+              <span id="zyEnemyHealthBar"></span>
+            </div>
+            <p class="zy-battle-message" id="zyBattleMessage" aria-live="polite">部署文字兵，守住阿斗</p>
+          </section>
+
+          <section class="zy-player-area" aria-label="我方阵地">
+            <div class="zy-board-heading">
+              <span>我方阵地</span>
+              <small id="zyPowerLabel">战力 0</small>
+            </div>
+            <div class="zy-board" id="zyPlayerBoard" aria-label="文字兵阵地"></div>
+          </section>
+
+          <section class="zy-fort zy-fort-player" aria-label="我方阿斗">
+            <div class="zy-fort-name"><span>蜀军</span><strong>阿斗</strong></div>
+            <div class="zy-hearts" id="zyPlayerHearts" aria-label="我方三条命"></div>
+          </section>
+        </main>
+
+        <footer class="zy-actions" aria-label="游戏操作">
+          <button class="zy-action" id="zyRecruit" type="button">
+            <span class="zy-action-symbol">兵</span>
+            <strong>征兵</strong>
+            <small>馒 <b id="zyRecruitCost">10</b></small>
+          </button>
+          <button class="zy-action" id="zyShovel" type="button">
+            <span class="zy-action-symbol">铲</span>
+            <strong>扩地</strong>
+            <small>馒 <b id="zyShovelCost">24</b></small>
+          </button>
+          <button class="zy-action zy-action-gold" id="zySeekHero" type="button">
+            <span class="zy-action-symbol">将</span>
+            <strong>招贤</strong>
+            <small>馒 <b id="zyHeroCost">32</b></small>
+          </button>
+        </footer>
+      </div>
+
+      <div class="zy-modal" id="zyIntroModal" role="dialog" aria-modal="true" aria-labelledby="zyIntroTitle">
+        <div class="zy-modal-panel">
+          <p>长坂坡 · 第一战</p>
+          <h2 id="zyIntroTitle">赵云与阿斗</h2>
+          <div class="zy-rule-line"><span>兵</span><p>点击征兵，把刀、枪、骑、弓部署到阵地。</p></div>
+          <div class="zy-rule-line"><span>合</span><p>拖动两个相同等级的文字即可合成升级。</p></div>
+          <div class="zy-rule-line"><span>将</span><p>凑齐赵云、关羽、张飞或黄忠即可唤醒武将。</p></div>
+          <button class="zy-primary-button" id="startZhaoGame" type="button">开始守护</button>
+        </div>
+      </div>
+
+      <div class="zy-modal" id="zyResultModal" role="dialog" aria-modal="true" aria-labelledby="zyResultTitle" hidden>
+        <div class="zy-modal-panel zy-result-panel">
+          <p id="zyResultEyebrow">长坂坡战报</p>
+          <h2 id="zyResultTitle">守护成功</h2>
+          <div class="zy-result-stats">
+            <span>抵御波次 <b id="zyResultWaves">0</b></span>
+            <span>最高战力 <b id="zyResultPower">0</b></span>
+          </div>
+          <button class="zy-primary-button" id="zyPlayAgain" type="button">再战一局</button>
+          <button class="zy-text-button" id="zyLeaveResult" type="button">返回娱乐页</button>
+        </div>
+      </div>
+    </section>
   </body>
 </html>

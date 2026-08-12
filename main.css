@@ -105,6 +105,55 @@ button {
   font-size: 12px;
 }
 
+.entertainment-content {
+  padding: 30px 0 54px;
+}
+
+.game-launcher {
+  display: grid;
+  width: 112px;
+  justify-items: center;
+  gap: 10px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--ink);
+}
+
+.game-icon-crop {
+  display: block;
+  width: 88px;
+  height: 88px;
+  overflow: hidden;
+  border: 1px solid rgba(61, 48, 36, 0.16);
+  border-radius: 20px;
+  background: #fbc719;
+  box-shadow: 0 8px 18px rgba(85, 62, 32, 0.14);
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+.game-icon-crop img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.game-launcher > span:last-child {
+  width: 100%;
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.game-launcher:hover .game-icon-crop,
+.game-launcher:focus-visible .game-icon-crop {
+  box-shadow: 0 12px 24px rgba(85, 62, 32, 0.2);
+  transform: translateY(-2px);
+}
+
 .friends-content,
 .profile-content {
   padding: 28px 0 54px;
@@ -525,8 +574,19 @@ input:focus-visible {
   }
 
   .friends-content,
-  .profile-content {
+  .profile-content,
+  .entertainment-content {
     padding-top: 22px;
+  }
+
+  .game-launcher {
+    width: 94px;
+  }
+
+  .game-icon-crop {
+    width: 76px;
+    height: 76px;
+    border-radius: 18px;
   }
 
   .friend-section-heading {

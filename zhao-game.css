@@ -1,0 +1,695 @@
+:root {
+  --zy-ink: #2a2018;
+  --zy-paper: #e9dec3;
+  --zy-paper-light: #f6edd7;
+  --zy-red: #a93629;
+  --zy-blue: #315e70;
+  --zy-gold: #c4902d;
+  --zy-grid: rgba(75, 61, 43, 0.2);
+}
+
+body.zy-game-open {
+  overscroll-behavior: none;
+}
+
+.zhao-game {
+  position: fixed;
+  z-index: 50;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 40%, rgba(79, 88, 72, 0.25), transparent 55%),
+    #1f2925;
+  color: var(--zy-ink);
+  touch-action: manipulation;
+}
+
+.zy-game-shell {
+  position: relative;
+  display: grid;
+  width: min(100vw, 560px);
+  height: 100svh;
+  grid-template-rows: 62px minmax(0, 1fr) 88px;
+  overflow: hidden;
+  background-color: var(--zy-paper);
+  background-image:
+    linear-gradient(rgba(245, 235, 207, 0.12), rgba(245, 235, 207, 0.12)),
+    url("assets/paper-texture.jpg");
+  background-size: auto, 720px 720px;
+  box-shadow: 0 0 44px rgba(0, 0, 0, 0.34);
+}
+
+.zy-topbar {
+  position: relative;
+  z-index: 4;
+  display: grid;
+  grid-template-columns: 42px minmax(90px, 1fr) auto 42px;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid rgba(60, 46, 32, 0.28);
+  padding: env(safe-area-inset-top) 10px 0;
+  background: rgba(238, 224, 190, 0.94);
+}
+
+.zy-icon-button {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: #594939;
+}
+
+.zy-icon-button svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.zy-wave-title {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.zy-wave-title small {
+  color: #89765f;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.zy-wave-title strong {
+  font-family: "Kaiti SC", "STKaiti", "KaiTi", serif;
+  font-size: 20px;
+}
+
+.zy-resource {
+  display: flex;
+  height: 34px;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid rgba(99, 76, 44, 0.28);
+  border-radius: 17px;
+  padding: 0 11px 0 4px;
+  background: rgba(255, 248, 226, 0.72);
+  font-variant-numeric: tabular-nums;
+}
+
+.zy-resource span {
+  display: grid;
+  width: 25px;
+  height: 25px;
+  place-items: center;
+  border-radius: 50%;
+  background: #c99235;
+  color: #fff7dd;
+  font-family: "Kaiti SC", "STKaiti", "KaiTi", serif;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.zy-resource b {
+  min-width: 28px;
+  font-size: 14px;
+}
+
+.zy-battlefield {
+  position: relative;
+  display: grid;
+  min-height: 0;
+  grid-template-rows: 55px minmax(52px, 0.55fr) minmax(88px, 0.8fr) minmax(230px, 2.5fr) 55px;
+  overflow: hidden;
+  background:
+    linear-gradient(90deg, transparent 49.7%, rgba(76, 61, 42, 0.1) 50%, transparent 50.3%),
+    linear-gradient(rgba(255, 250, 232, 0.28), rgba(132, 146, 105, 0.13));
+}
+
+.zy-battlefield::before,
+.zy-battlefield::after {
+  position: absolute;
+  z-index: 0;
+  right: 0;
+  left: 0;
+  height: 25%;
+  pointer-events: none;
+  content: "";
+  opacity: 0.3;
+}
+
+.zy-battlefield::before {
+  top: 0;
+  background: linear-gradient(180deg, rgba(147, 68, 51, 0.2), transparent);
+}
+
+.zy-battlefield::after {
+  bottom: 0;
+  background: linear-gradient(0deg, rgba(50, 97, 108, 0.18), transparent);
+}
+
+.zy-fort {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 18px;
+  color: #fff8e6;
+}
+
+.zy-fort-enemy {
+  flex-direction: row-reverse;
+  background: linear-gradient(90deg, #70342b, #a14533);
+}
+
+.zy-fort-player {
+  background: linear-gradient(90deg, #2e5663, #477682);
+}
+
+.zy-fort-name {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+}
+
+.zy-fort-name span {
+  font-size: 10px;
+  opacity: 0.7;
+}
+
+.zy-fort-name strong {
+  font-family: "Kaiti SC", "STKaiti", "KaiTi", serif;
+  font-size: 26px;
+}
+
+.zy-hearts {
+  display: flex;
+  gap: 6px;
+}
+
+.zy-heart {
+  position: relative;
+  width: 18px;
+  height: 16px;
+  color: #f4b84c;
+  font-size: 19px;
+  line-height: 16px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.zy-heart.is-lost {
+  color: rgba(255, 245, 217, 0.22);
+  text-shadow: none;
+}
+
+.zy-enemy-ranks {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 6px 15px 3px;
+}
+
+.zy-enemy-unit {
+  position: relative;
+  display: grid;
+  width: clamp(37px, 10vw, 49px);
+  aspect-ratio: 1;
+  place-items: center;
+  border: 1px solid rgba(85, 37, 28, 0.36);
+  border-radius: 4px;
+  background: rgba(153, 64, 45, 0.14);
+  color: #7f2f27;
+  font-family: "Kaiti SC", "STKaiti", "KaiTi", serif;
+  font-size: clamp(20px, 6vw, 28px);
+  font-weight: 800;
+}
+
+.zy-enemy-unit small,
+.zy-unit-level {
+  position: absolute;
+  top: 3px;
+  right: 4px;
+  font-family: system-ui, sans-serif;
+  font-size: 8px;
+  font-weight: 800;
+}
+
+.zy-clash-zone {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 7px;
+  padding: 2px 24px;
+}
+
+.zy-path-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  border-left: 1px dashed rgba(79, 62, 44, 0.25);
+}
+
+.zy-clash-status {
+  z-index: 1;
+  display: flex;
+  width: min(100%, 340px);
+  align-items: center;
+  justify-content: space-between;
+  color: #5f4e3d;
+}
+
+.zy-clash-status strong {
+  font-family: "Songti SC", "STSong", serif;
+  font-size: 13px;
+}
+
+.zy-clash-status span {
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.zy-health-track {
+  z-index: 1;
+  width: min(100%, 340px);
+  height: 7px;
+  overflow: hidden;
+  border: 1px solid rgba(75, 54, 37, 0.22);
+  border-radius: 4px;
+  background: rgba(91, 75, 53, 0.12);
+}
+
+.zy-health-track span {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: #9b4033;
+  transform-origin: left;
+  transition: transform 180ms linear;
+}
+
+.zy-battle-message {
+  z-index: 1;
+  min-height: 16px;
+  margin: 0;
+  color: #87725b;
+  font-size: 10px;
+}
+
+.zy-player-area {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  min-height: 0;
+  grid-template-rows: 28px minmax(0, 1fr);
+  padding: 0 15px 8px;
+}
+
+.zy-board-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #76634d;
+  font-size: 10px;
+}
+
+.zy-board-heading small {
+  font-size: 10px;
+}
+
+.zy-board {
+  display: grid;
+  min-height: 0;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-rows: repeat(3, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.zy-cell {
+  position: relative;
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+  place-items: center;
+  border: 1px solid var(--zy-grid);
+  border-radius: 4px;
+  padding: 0;
+  background: rgba(249, 241, 217, 0.54);
+  color: #31271e;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.zy-cell.is-locked {
+  border-style: dashed;
+  background:
+    repeating-linear-gradient(135deg, rgba(77, 67, 50, 0.08) 0 5px, transparent 5px 10px),
+    rgba(87, 96, 72, 0.1);
+  color: rgba(65, 55, 42, 0.36);
+}
+
+.zy-cell.is-locked::after {
+  content: "封";
+  font-family: "Kaiti SC", "STKaiti", "KaiTi", serif;
+  font-size: 17px;
+}
+
+.zy-cell.is-selected {
+  border-color: #b37822;
+  box-shadow: inset 0 0 0 2px rgba(196, 144, 45, 0.32);
+}
+
+.zy-cell.is-merge-target {
+  animation: zy-target-pulse 700ms ease infinite alternate;
+}
+
+.zy-unit {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  place-items: center;
+  font-family: "Kaiti SC", "STKaiti", "KaiTi", serif;
+  font-size: clamp(25px, 8vw, 38px);
+  font-weight: 800;
+  line-height: 1;
+  cursor: grab;
+}
+
+.zy-unit[data-kind="hero"] {
+  background: rgba(202, 148, 42, 0.16);
+  color: #7b5014;
+  font-size: clamp(18px, 5.5vw, 27px);
+}
+
+.zy-unit[data-kind="fragment"] {
+  color: #aa741d;
+}
+
+.zy-unit[data-type="刀"] {
+  color: #5a5752;
+}
+
+.zy-unit[data-type="枪"] {
+  color: #466473;
+}
+
+.zy-unit[data-type="骑"] {
+  color: #81583f;
+}
+
+.zy-unit[data-type="弓"] {
+  color: #596d43;
+}
+
+.zy-unit.is-hit {
+  animation: zy-hit 220ms ease;
+}
+
+.zy-cell.is-new .zy-unit {
+  animation: zy-unit-in 220ms ease-out;
+}
+
+.zy-actions {
+  position: relative;
+  z-index: 5;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border-top: 1px solid rgba(57, 43, 29, 0.28);
+  padding: 7px 9px calc(7px + env(safe-area-inset-bottom));
+  background: rgba(226, 207, 166, 0.97);
+}
+
+.zy-action {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: 34px minmax(0, 1fr);
+  grid-template-rows: 1fr 1fr;
+  align-items: center;
+  border: 0;
+  border-right: 1px solid rgba(83, 61, 37, 0.17);
+  padding: 4px 8px;
+  background: transparent;
+  color: #48392b;
+  text-align: left;
+}
+
+.zy-action:last-child {
+  border-right: 0;
+}
+
+.zy-action-symbol {
+  display: grid;
+  width: 31px;
+  height: 31px;
+  grid-row: 1 / 3;
+  place-items: center;
+  border: 1px solid rgba(74, 57, 35, 0.32);
+  border-radius: 50%;
+  background: rgba(255, 247, 219, 0.58);
+  font-family: "Kaiti SC", "STKaiti", "KaiTi", serif;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.zy-action strong {
+  align-self: end;
+  overflow: hidden;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.zy-action small {
+  align-self: start;
+  color: #806c54;
+  font-size: 9px;
+}
+
+.zy-action-gold .zy-action-symbol {
+  border-color: #a97a25;
+  color: #9b6514;
+}
+
+.zy-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.43;
+}
+
+.zy-modal {
+  position: absolute;
+  z-index: 20;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(30, 35, 29, 0.7);
+  backdrop-filter: blur(4px);
+}
+
+.zy-modal-panel {
+  width: min(100%, 390px);
+  border: 1px solid rgba(82, 58, 35, 0.28);
+  border-radius: 7px;
+  padding: 30px 28px 26px;
+  background-color: var(--zy-paper-light);
+  background-image: url("assets/paper-texture.jpg");
+  background-size: 720px 720px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.28);
+}
+
+.zy-modal-panel > p:first-child {
+  margin: 0 0 6px;
+  color: #a64a31;
+  font-size: 10px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.zy-modal-panel h2 {
+  margin: 0 0 24px;
+  font-family: "Kaiti SC", "STKaiti", "KaiTi", serif;
+  font-size: 34px;
+  text-align: center;
+}
+
+.zy-rule-line {
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  align-items: center;
+  gap: 12px;
+  border-top: 1px solid rgba(77, 58, 38, 0.13);
+  padding: 11px 0;
+}
+
+.zy-rule-line span {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border-radius: 50%;
+  background: #4e6e68;
+  color: #fff5dd;
+  font-family: "Kaiti SC", "STKaiti", "KaiTi", serif;
+  font-weight: 800;
+}
+
+.zy-rule-line p {
+  margin: 0;
+  color: #6a5947;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.zy-primary-button,
+.zy-text-button {
+  width: 100%;
+  height: 48px;
+  border: 0;
+  border-radius: 5px;
+  font-weight: 800;
+}
+
+.zy-primary-button {
+  margin-top: 22px;
+  background: #a33e2e;
+  color: #fff7e1;
+  box-shadow: inset 0 -2px 0 rgba(71, 24, 16, 0.22);
+}
+
+.zy-text-button {
+  height: 40px;
+  margin-top: 6px;
+  background: transparent;
+  color: #76634e;
+}
+
+.zy-result-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-top: 1px solid rgba(75, 56, 37, 0.16);
+  border-bottom: 1px solid rgba(75, 56, 37, 0.16);
+}
+
+.zy-result-stats span {
+  display: grid;
+  gap: 5px;
+  padding: 17px 10px;
+  color: #7f6b55;
+  font-size: 10px;
+  text-align: center;
+}
+
+.zy-result-stats span:first-child {
+  border-right: 1px solid rgba(75, 56, 37, 0.16);
+}
+
+.zy-result-stats b {
+  color: #33281e;
+  font-size: 22px;
+}
+
+.zy-float-text {
+  position: absolute;
+  z-index: 12;
+  left: 50%;
+  top: 44%;
+  max-width: 80%;
+  margin: 0;
+  color: #9b3428;
+  font-family: "Kaiti SC", "STKaiti", "KaiTi", serif;
+  font-size: 26px;
+  font-weight: 800;
+  pointer-events: none;
+  text-align: center;
+  text-shadow: 0 1px 0 #fff2d7;
+  transform: translate(-50%, -50%);
+  animation: zy-float 900ms ease forwards;
+}
+
+.zy-screen-shake {
+  animation: zy-shake 220ms linear;
+}
+
+@keyframes zy-unit-in {
+  from { opacity: 0; transform: scale(0.65); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes zy-hit {
+  0%, 100% { transform: translateX(0); }
+  35% { transform: translateX(-4px); color: #b13f2f; }
+  70% { transform: translateX(3px); }
+}
+
+@keyframes zy-target-pulse {
+  from { box-shadow: inset 0 0 0 1px rgba(196, 144, 45, 0.2); }
+  to { box-shadow: inset 0 0 0 3px rgba(196, 144, 45, 0.48); }
+}
+
+@keyframes zy-float {
+  0% { opacity: 0; transform: translate(-50%, 0); }
+  20% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -46px); }
+}
+
+@keyframes zy-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+@media (min-width: 700px) {
+  .zy-game-shell {
+    height: min(920px, 100svh);
+    border-right: 1px solid rgba(255, 255, 255, 0.09);
+    border-left: 1px solid rgba(255, 255, 255, 0.09);
+  }
+
+  .zy-unit {
+    font-size: 38px;
+  }
+}
+
+@media (max-height: 690px) {
+  .zy-game-shell {
+    grid-template-rows: 52px minmax(0, 1fr) 74px;
+  }
+
+  .zy-battlefield {
+    grid-template-rows: 45px 45px 68px minmax(175px, 1fr) 45px;
+  }
+
+  .zy-actions {
+    padding-top: 4px;
+    padding-bottom: calc(4px + env(safe-area-inset-bottom));
+  }
+
+  .zy-action-symbol {
+    width: 27px;
+    height: 27px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .zy-cell.is-merge-target,
+  .zy-unit.is-hit,
+  .zy-cell.is-new .zy-unit,
+  .zy-float-text,
+  .zy-screen-shake {
+    animation: none !important;
+  }
+}
