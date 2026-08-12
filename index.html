@@ -15,44 +15,53 @@
   </head>
   <body class="auth-loading">
     <section class="auth-view" aria-label="登录注册">
-      <div class="auth-frame">
-        <header class="auth-topbar" aria-label="深情.club">
-          <span class="brand-mark">深</span>
-          <span class="brand-name">深情.club</span>
-        </header>
-
-        <div class="auth-copy">
-          <p class="auth-kicker">PRIVATE COAST</p>
-          <h1>把海风留给会抵达的人。</h1>
-          <p>登录后进入这一片暮色，安静、私密，只放下一张图。</p>
+      <div class="gate">
+        <div class="gate-media" aria-hidden="true">
+          <img src="assets/hero.png" alt="">
         </div>
 
-        <aside class="auth-panel">
-          <div class="auth-panel-head">
-            <p id="authEyebrow">欢迎回来</p>
-            <h2 id="authTitle">登录账号</h2>
+        <div class="gate-content">
+          <header class="gate-header">
+            <a class="gate-logo" href="/" aria-label="深情.club 首页">
+              <span>深</span>
+              <strong>深情.club</strong>
+            </a>
+            <p>private image room</p>
+          </header>
+
+          <div class="gate-statement">
+            <p class="gate-label">access after dusk</p>
+            <h1>晚风留给你。</h1>
           </div>
 
-          <div class="auth-tabs" role="tablist" aria-label="账号">
-            <button class="auth-tab is-active" type="button" role="tab" aria-selected="true" data-auth-mode="login">登录</button>
-            <button class="auth-tab" type="button" role="tab" aria-selected="false" data-auth-mode="register">注册</button>
-          </div>
+          <section class="gate-access" aria-label="账号访问">
+            <div class="mode-switch" role="tablist" aria-label="账号">
+              <button class="mode-button is-active" type="button" role="tab" aria-selected="true" data-auth-mode="login">登录</button>
+              <button class="mode-button" type="button" role="tab" aria-selected="false" data-auth-mode="register">注册</button>
+            </div>
 
-          <form class="auth-form" id="authForm" autocomplete="on">
-            <label for="username">账号</label>
-            <input id="username" name="username" type="text" autocomplete="username" required minlength="2" maxlength="24" placeholder="请输入账号">
+            <form class="gate-form" id="authForm" autocomplete="on">
+              <div class="field-row">
+                <label for="username">账号</label>
+                <input id="username" name="username" type="text" autocomplete="username" required minlength="2" maxlength="24" placeholder="name">
+              </div>
 
-            <label for="password">密码</label>
-            <input id="password" name="password" type="password" autocomplete="current-password" required minlength="6" placeholder="请输入密码">
+              <div class="field-row">
+                <label for="password">密码</label>
+                <input id="password" name="password" type="password" autocomplete="current-password" required minlength="6" placeholder="password">
+              </div>
 
-            <label class="register-only is-hidden" for="confirmPassword">确认密码</label>
-            <input class="register-only is-hidden" id="confirmPassword" name="confirmPassword" type="password" autocomplete="new-password" minlength="6" placeholder="请再次输入密码">
+              <div class="field-row register-only is-hidden">
+                <label for="confirmPassword">确认</label>
+                <input id="confirmPassword" name="confirmPassword" type="password" autocomplete="new-password" minlength="6" placeholder="repeat">
+              </div>
 
-            <p class="auth-message" id="authMessage" aria-live="polite"></p>
+              <button class="gate-submit" type="submit">进入</button>
+            </form>
 
-            <button class="auth-submit" type="submit">登录</button>
-          </form>
-        </aside>
+            <p class="gate-message" id="authMessage" aria-live="polite"></p>
+          </section>
+        </div>
       </div>
     </section>
 

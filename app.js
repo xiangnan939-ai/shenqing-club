@@ -6,15 +6,13 @@ const STORAGE_KEYS = {
 const body = document.body;
 const authForm = document.querySelector('#authForm');
 const tabs = document.querySelectorAll('[data-auth-mode]');
-const submitButton = document.querySelector('.auth-submit');
+const submitButton = document.querySelector('.gate-submit');
 const message = document.querySelector('#authMessage');
 const currentUser = document.querySelector('#currentUser');
 const logoutButton = document.querySelector('#logoutButton');
 const registerOnlyFields = document.querySelectorAll('.register-only');
 const passwordInput = document.querySelector('#password');
 const confirmPasswordInput = document.querySelector('#confirmPassword');
-const authEyebrow = document.querySelector('#authEyebrow');
-const authTitle = document.querySelector('#authTitle');
 
 let mode = 'login';
 
@@ -54,9 +52,8 @@ function switchMode(nextMode) {
   mode = nextMode;
   setMessage('');
   authForm.reset();
-  submitButton.textContent = mode === 'login' ? '登录' : '创建账号';
-  authEyebrow.textContent = mode === 'login' ? '欢迎回来' : '新的抵达';
-  authTitle.textContent = mode === 'login' ? '登录账号' : '创建账号';
+  authForm.classList.toggle('is-register', mode === 'register');
+  submitButton.textContent = mode === 'login' ? '进入' : '创建';
   passwordInput.autocomplete = mode === 'login' ? 'current-password' : 'new-password';
   confirmPasswordInput.required = mode === 'register';
 
