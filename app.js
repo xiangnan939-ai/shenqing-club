@@ -109,15 +109,23 @@ function closeBook() {
 }
 
 async function sendAuthRequest(endpoint, payload) {
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    credentials: 'same-origin',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  });
+  let response;
+  try {
+    response = await fetch(endpoint, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+  } catch {
+    throw new Error('网络连接中断，请检查网络后重试。');
+  }
   const result = await response.json().catch(() => ({}));
   if (!response.ok) {
-    const error = new Error(result.error || '请求失败，请稍后重试。');
+    const fallback = response.status >= 500
+      ? '服务器处理超时，请稍后重试。'
+      : '请求未完成，请重新检查输入。';
+    const error = new Error(result.error || fallback);
     error.resetTurnstile = result.resetTurnstile;
     throw error;
   }

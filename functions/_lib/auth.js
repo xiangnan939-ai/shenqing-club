@@ -1,6 +1,8 @@
 const SESSION_COOKIE = 'shenqing_session';
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 30;
-const PASSWORD_ITERATIONS = 210000;
+// Cloudflare's free Workers tier has a tight per-request CPU budget.
+// Web Crypto still provides a salted, deliberately slow password derivation.
+const PASSWORD_ITERATIONS = 50000;
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();

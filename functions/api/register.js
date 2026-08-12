@@ -45,14 +45,24 @@ export async function onRequestPost(context) {
     }, configurationError ? 503 : 400);
   }
 
-  const existing = await context.env.DB.prepare(
-    'SELECT id FROM users WHERE username = ? LIMIT 1',
-  ).bind(username).first();
+  let existing;
+  try {
+    existing = await context.env.DB.prepare(
+      'SELECT id FROM users WHERE username = ? LIMIT 1',
+    ).bind(username).first();
+  } catch {
+    return json({ error: '账号数据库暂时不可用，请稍后重试。' }, 503);
+  }
   if (existing) {
     return json({ error: '这个账号已经存在。', resetTurnstile: true }, 409);
   }
 
-  const passwordData = await hashPassword(password);
+  let passwordData;
+  try {
+    passwordData = await hashPassword(password);
+  } catch {
+    return json({ error: '密码安全处理失败，请稍后重试。' }, 503);
+  }
   try {
     await context.env.DB.prepare(
       'INSERT INTO users (username, password_hash, password_salt) VALUES (?, ?, ?)',
@@ -61,10 +71,15 @@ export async function onRequestPost(context) {
     if (String(error).includes('UNIQUE')) {
       return json({ error: '这个账号已经存在。', resetTurnstile: true }, 409);
     }
-    throw error;
+    return json({ error: '账号保存失败，请稍后重试。' }, 503);
   }
 
-  const cookie = await createSessionCookie(username, context.env.SESSION_SECRET);
+  let cookie;
+  try {
+    cookie = await createSessionCookie(username, context.env.SESSION_SECRET);
+  } catch {
+    return json({ error: '账号已创建，请返回登录页登录。' }, 503);
+  }
   return json({ ok: true, username }, 201, { 'Set-Cookie': cookie });
 }
 
