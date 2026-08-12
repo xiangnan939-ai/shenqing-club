@@ -8,8 +8,8 @@
     <meta property="og:description" content="登录深情俱乐部">
     <meta property="og:type" content="website">
     <title>深情俱乐部</title>
-    <link rel="stylesheet" href="styles.css?v=3">
-    <script src="app.js?v=4" defer></script>
+    <link rel="stylesheet" href="styles.css?v=4">
+    <script src="app.js?v=5" defer></script>
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" defer></script>
   </head>
   <body>
@@ -35,6 +35,11 @@
                   <input id="registerUsername" name="username" type="text" autocomplete="username" required minlength="2" maxlength="24" placeholder="2-24 位字符">
                 </label>
 
+                <label class="page-field" for="registerEmail">
+                  <span>邮箱</span>
+                  <input id="registerEmail" name="email" type="email" autocomplete="email" required maxlength="254" placeholder="用于绑定账号">
+                </label>
+
                 <label class="page-field" for="registerPassword">
                   <span>密码</span>
                   <input id="registerPassword" name="password" type="password" autocomplete="new-password" required minlength="8" maxlength="128" placeholder="至少 8 位字符">
@@ -48,6 +53,14 @@
                 <div class="turnstile-row">
                   <span>人机验证</span>
                   <div id="turnstileWidget"></div>
+                </div>
+
+                <div class="email-code-row">
+                  <label class="page-field" for="registerEmailCode">
+                    <span>邮箱验证码</span>
+                    <input id="registerEmailCode" name="emailCode" type="text" inputmode="numeric" autocomplete="one-time-code" required minlength="6" maxlength="6" pattern="[0-9]{6}" placeholder="6 位数字">
+                  </label>
+                  <button class="send-code-button" id="sendEmailCode" type="button">发送验证码</button>
                 </div>
 
                 <p class="form-message" id="registerMessage" aria-live="polite"></p>
@@ -75,7 +88,7 @@
 
                 <div class="recovery-note" id="recoveryNote">
                   <span class="note-index">01</span>
-                  <p>当前账号暂未绑定邮箱。提交后会显示安全的人工重置指引。</p>
+                  <p>新注册账号会绑定已验证邮箱。密码找回功能会使用该邮箱核验身份。</p>
                 </div>
 
                 <p class="form-message" id="recoveryMessage" aria-live="polite"></p>

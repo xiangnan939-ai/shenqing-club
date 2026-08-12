@@ -7,6 +7,8 @@ const loginMessage = document.querySelector('#loginMessage');
 const registerForm = document.querySelector('#registerForm');
 const registerSubmit = document.querySelector('#registerSubmit');
 const registerMessage = document.querySelector('#registerMessage');
+const registerEmail = document.querySelector('#registerEmail');
+const sendEmailCode = document.querySelector('#sendEmailCode');
 const recoveryForm = document.querySelector('#recoveryForm');
 const recoveryMessage = document.querySelector('#recoveryMessage');
 const pagePanels = document.querySelectorAll('[data-page]');
@@ -16,6 +18,7 @@ const pageClosers = document.querySelectorAll('[data-close-book]');
 let turnstileId = null;
 let turnstileToken = '';
 let turnstileSiteKey = '';
+let emailCodeTimer = null;
 
 function setMessage(element, text, tone = 'neutral') {
   element.textContent = text;
@@ -31,6 +34,23 @@ function resetTurnstile() {
   if (window.turnstile && turnstileId !== null) {
     window.turnstile.reset(turnstileId);
   }
+}
+
+function startEmailCodeCountdown(seconds) {
+  clearInterval(emailCodeTimer);
+  let remaining = Math.max(1, Number(seconds) || 60);
+  sendEmailCode.disabled = true;
+  sendEmailCode.textContent = `${remaining} 秒后重发`;
+  emailCodeTimer = window.setInterval(() => {
+    remaining -= 1;
+    if (remaining <= 0) {
+      clearInterval(emailCodeTimer);
+      sendEmailCode.disabled = false;
+      sendEmailCode.textContent = '重新发送';
+      return;
+    }
+    sendEmailCode.textContent = `${remaining} 秒后重发`;
+  }, 1000);
 }
 
 async function loadTurnstileConfig() {
@@ -127,6 +147,7 @@ async function sendAuthRequest(endpoint, payload) {
       : '请求未完成，请重新检查输入。';
     const error = new Error(result.error || fallback);
     error.resetTurnstile = result.resetTurnstile;
+    error.retryAfter = result.retryAfter;
     throw error;
   }
   return result;
@@ -165,6 +186,8 @@ registerForm.addEventListener('submit', async (event) => {
 
   const formData = new FormData(registerForm);
   const username = String(formData.get('username') || '').trim();
+  const email = String(formData.get('email') || '').trim();
+  const emailCode = String(formData.get('emailCode') || '').trim();
   const password = String(formData.get('password') || '');
   const confirmPassword = String(formData.get('confirmPassword') || '');
 
@@ -172,20 +195,46 @@ registerForm.addEventListener('submit', async (event) => {
     setMessage(registerMessage, '两次输入的密码不一致。', 'error');
     return;
   }
-  if (!turnstileToken) {
-    setMessage(registerMessage, '请先完成人机验证。', 'error');
+  if (!/^\d{6}$/u.test(emailCode)) {
+    setMessage(registerMessage, '请输入收到的 6 位邮箱验证码。', 'error');
     return;
   }
 
   setSubmitting(registerSubmit, true);
   try {
-    await sendAuthRequest('/api/register', { username, password, turnstileToken });
+    await sendAuthRequest('/api/register', { username, email, emailCode, password });
     window.location.replace('/main');
   } catch (error) {
     setMessage(registerMessage, error.message, 'error');
     if (error.resetTurnstile) resetTurnstile();
   } finally {
     setSubmitting(registerSubmit, false);
+  }
+});
+
+sendEmailCode.addEventListener('click', async () => {
+  setMessage(registerMessage, '');
+  if (!registerEmail.reportValidity()) return;
+  if (!turnstileToken) {
+    setMessage(registerMessage, '请先完成人机验证。', 'error');
+    return;
+  }
+
+  setSubmitting(sendEmailCode, true);
+  try {
+    const result = await sendAuthRequest('/api/email-code', {
+      email: registerEmail.value.trim(),
+      turnstileToken,
+    });
+    setMessage(registerMessage, '验证码已发送，10 分钟内有效。', 'success');
+    startEmailCodeCountdown(result.retryAfter);
+    resetTurnstile();
+    document.querySelector('#registerEmailCode').focus();
+  } catch (error) {
+    setMessage(registerMessage, error.message, 'error');
+    if (error.resetTurnstile) resetTurnstile();
+    if (error.retryAfter) startEmailCodeCountdown(error.retryAfter);
+    else setSubmitting(sendEmailCode, false);
   }
 });
 

@@ -1,0 +1,103 @@
+import {
+  EMAIL_VERIFICATION_LIMITS,
+  checkEmailSendLimits,
+  emailServiceError,
+  generateVerificationCode,
+  hashRequestIp,
+  hashVerificationCode,
+  isValidEmail,
+  normalizeEmail,
+  sendVerificationEmail,
+  verificationWindow,
+} from '../_lib/email.js';
+import { json, verifyTurnstile } from '../_lib/auth.js';
+
+export async function onRequestPost(context) {
+  let input;
+  try {
+    input = await context.request.json();
+  } catch {
+    return json({ error: '请求格式不正确。' }, 400);
+  }
+
+  const email = normalizeEmail(input.email);
+  const turnstileToken = String(input.turnstileToken || '');
+  if (!isValidEmail(email)) return json({ error: '请输入有效的邮箱地址。' }, 400);
+  if (!context.env.EMAIL_CODE_SECRET) {
+    return json({ error: '邮箱验证服务尚未配置。' }, 503);
+  }
+
+  const verification = await verifyTurnstile(
+    turnstileToken,
+    context.request,
+    context.env.TURNSTILE_SECRET_KEY,
+  );
+  if (!verification.success) {
+    const unavailable = verification.errorCodes.some((code) => [
+      'invalid-input-secret', 'missing-input-secret', 'siteverify-unavailable',
+    ].includes(code));
+    return json({
+      error: unavailable ? '人机验证服务暂时不可用。' : '请重新完成人机验证。',
+      resetTurnstile: true,
+    }, unavailable ? 503 : 400);
+  }
+
+  try {
+    const existing = await context.env.DB.prepare(
+      'SELECT id FROM users WHERE email = ? LIMIT 1',
+    ).bind(email).first();
+    if (existing) return json({ error: '这个邮箱已经绑定账号。', resetTurnstile: true }, 409);
+
+    const ipHash = await hashRequestIp(context.request, context.env.EMAIL_CODE_SECRET);
+    const limit = await checkEmailSendLimits(context.env.DB, email, ipHash);
+    if (!limit.allowed) {
+      return json({
+        error: limit.waitSeconds < 3600
+          ? `请 ${limit.waitSeconds} 秒后再发送。`
+          : '发送过于频繁，请一小时后再试。',
+        retryAfter: limit.waitSeconds,
+        resetTurnstile: true,
+      }, 429);
+    }
+
+    const code = generateVerificationCode();
+    const salt = crypto.randomUUID();
+    const codeHash = await hashVerificationCode(code, salt, context.env.EMAIL_CODE_SECRET);
+    const id = crypto.randomUUID();
+    const now = new Date();
+    const { expiresAt } = verificationWindow(now);
+
+    await context.env.DB.prepare(
+      `INSERT INTO email_verification_requests
+       (id, email, code_hash, code_salt, request_ip_hash, expires_at, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    ).bind(id, email, codeHash, salt, ipHash, expiresAt, now.toISOString()).run();
+
+    try {
+      await sendVerificationEmail({
+        apiKey: context.env.RESEND_API_KEY,
+        from: context.env.EMAIL_FROM,
+        email,
+        code,
+      });
+    } catch (error) {
+      await context.env.DB.prepare('DELETE FROM email_verification_requests WHERE id = ?').bind(id).run();
+      return emailServiceError(error);
+    }
+
+    return json({
+      ok: true,
+      expiresIn: EMAIL_VERIFICATION_LIMITS.codeTtlMinutes * 60,
+      retryAfter: EMAIL_VERIFICATION_LIMITS.resendSeconds,
+    });
+  } catch (error) {
+    if (String(error).includes('no such column') || String(error).includes('no such table')) {
+      return json({ error: '邮箱验证数据库尚未就绪。' }, 503);
+    }
+    return json({ error: '邮箱验证服务暂时不可用。' }, 503);
+  }
+}
+
+export function onRequest() {
+  return json({ error: 'Method not allowed' }, 405, { Allow: 'POST' });
+}

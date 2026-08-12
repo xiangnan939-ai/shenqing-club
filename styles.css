@@ -421,6 +421,35 @@ button {
   color: #aaa093;
 }
 
+.email-code-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 112px;
+  align-items: end;
+  gap: 12px;
+}
+
+.send-code-button {
+  height: 42px;
+  border: 1px solid #817465;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.28);
+  color: #51483e;
+  font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.send-code-button:hover,
+.send-code-button:focus-visible {
+  border-color: #d84d0a;
+  color: #b53e07;
+}
+
+.send-code-button:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+
 .turnstile-row {
   display: grid;
   gap: 7px;
@@ -601,6 +630,16 @@ button:focus-visible {
   .page-field input {
     height: 31px;
     font-size: 13px;
+  }
+
+  .email-code-row {
+    grid-template-columns: minmax(0, 1fr) 96px;
+    gap: 8px;
+  }
+
+  .send-code-button {
+    height: 31px;
+    font-size: 9px;
   }
 
   .turnstile-row {
