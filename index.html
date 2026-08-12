@@ -10,6 +10,7 @@
     <title>登录 · 深情.club</title>
     <link rel="stylesheet" href="styles.css">
     <script src="app.js" defer></script>
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" defer></script>
   </head>
   <body>
     <header class="site-header">
@@ -43,12 +44,17 @@
 
           <div class="form-field">
             <label for="password">密码</label>
-            <input id="password" name="password" type="password" autocomplete="current-password" required minlength="6" placeholder="至少 6 位字符">
+            <input id="password" name="password" type="password" autocomplete="current-password" required minlength="8" maxlength="128" placeholder="至少 8 位字符">
           </div>
 
           <div class="form-field register-only is-hidden">
             <label for="confirmPassword">确认密码</label>
-            <input id="confirmPassword" name="confirmPassword" type="password" autocomplete="new-password" minlength="6" placeholder="再次输入密码">
+            <input id="confirmPassword" name="confirmPassword" type="password" autocomplete="new-password" minlength="8" maxlength="128" placeholder="再次输入密码">
+          </div>
+
+          <div class="turnstile-row register-only is-hidden">
+            <span>人机验证</span>
+            <div id="turnstileWidget"></div>
           </div>
 
           <p class="auth-message" id="authMessage" aria-live="polite"></p>
@@ -58,7 +64,7 @@
           </button>
         </form>
 
-        <p class="auth-note">账号仅保存在当前浏览器</p>
+        <p class="auth-note">账号由 Cloudflare 安全保存</p>
       </section>
     </main>
 

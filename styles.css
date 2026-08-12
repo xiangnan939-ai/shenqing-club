@@ -250,6 +250,21 @@ button {
   color: #aaa69d;
 }
 
+.turnstile-row {
+  display: grid;
+  gap: 7px;
+}
+
+.turnstile-row > span {
+  color: #4e544f;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+#turnstileWidget {
+  min-height: 65px;
+}
+
 .auth-message {
   min-height: 19px;
   margin: -4px 0 -4px;
@@ -280,6 +295,11 @@ button {
 
 .auth-submit:hover {
   background: #384940;
+}
+
+.auth-submit:disabled {
+  cursor: wait;
+  opacity: 0.68;
 }
 
 .auth-submit:active {

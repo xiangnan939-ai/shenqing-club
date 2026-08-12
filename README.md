@@ -1,18 +1,18 @@
 # 深情.club
 
-一个极简静态网站，当前内容是一张登录后可见的全屏图片。
+一个使用 Cloudflare Pages Functions、Turnstile 和 D1 的登录网站，主界面是一张登录后可见的全屏图片。
 
 ## 本地预览
 
-直接打开 `index.html` 即可预览；也可以在当前目录运行：
+完整功能需要通过 Wrangler Pages 开发服务器预览：
 
 ```sh
-python3 -m http.server 4173
+wrangler pages dev .
 ```
 
 然后访问 `http://localhost:4173`。
 
-首次访问先切换到“注册”创建本地账号，之后即可登录进入主界面。账号信息保存在当前浏览器本地，适合静态站演示使用。
+注册时必须通过 Cloudflare Turnstile。账号存储在 Cloudflare D1，密码使用带随机盐的 PBKDF2-SHA-256 哈希保存，会话通过安全的 HttpOnly Cookie 管理。
 
 ## 免费上线方案
 

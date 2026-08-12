@@ -1,10 +1,6 @@
-const STORAGE_KEYS = {
-  users: 'shenqingUsers',
-  session: 'shenqingSession',
-};
-
 const authForm = document.querySelector('#authForm');
 const tabs = document.querySelectorAll('[data-auth-mode]');
+const submitButton = document.querySelector('.auth-submit');
 const submitLabel = document.querySelector('.auth-submit span:first-child');
 const message = document.querySelector('#authMessage');
 const authTitle = document.querySelector('#authTitle');
@@ -14,31 +10,66 @@ const passwordInput = document.querySelector('#password');
 const confirmPasswordInput = document.querySelector('#confirmPassword');
 
 let mode = 'login';
-
-function readUsers() {
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEYS.users)) || {};
-  } catch {
-    return {};
-  }
-}
-
-function writeUsers(users) {
-  localStorage.setItem(STORAGE_KEYS.users, JSON.stringify(users));
-}
+let turnstileId = null;
+let turnstileToken = '';
+let turnstileSiteKey = '';
 
 function setMessage(text, tone = 'neutral') {
   message.textContent = text;
   message.dataset.tone = tone;
 }
 
-function normalizeUsername(value) {
-  return value.trim().toLowerCase();
+function setSubmitting(isSubmitting) {
+  submitButton.disabled = isSubmitting;
+  submitButton.classList.toggle('is-loading', isSubmitting);
 }
 
-function enterMain(username) {
-  localStorage.setItem(STORAGE_KEYS.session, username);
-  window.location.replace('main.html');
+function resetTurnstile() {
+  turnstileToken = '';
+  if (window.turnstile && turnstileId !== null) {
+    window.turnstile.reset(turnstileId);
+  }
+}
+
+async function loadTurnstileConfig() {
+  if (turnstileSiteKey) return;
+  const response = await fetch('/api/config', { cache: 'no-store' });
+  if (!response.ok) throw new Error('无法加载人机验证配置。');
+  const config = await response.json();
+  turnstileSiteKey = config.turnstileSiteKey;
+  if (!turnstileSiteKey) throw new Error('人机验证尚未配置。');
+}
+
+async function renderTurnstile() {
+  if (mode !== 'register' || turnstileId !== null || !window.turnstile) return;
+  try {
+    await loadTurnstileConfig();
+  } catch (error) {
+    setMessage(error.message, 'error');
+    return;
+  }
+  turnstileId = window.turnstile.render('#turnstileWidget', {
+    sitekey: turnstileSiteKey,
+    theme: 'light',
+    size: 'flexible',
+    callback(token) {
+      turnstileToken = token;
+      setMessage('');
+    },
+    'expired-callback': resetTurnstile,
+    'error-callback': () => {
+      turnstileToken = '';
+      setMessage('人机验证加载失败，请刷新页面重试。', 'error');
+    },
+  });
+}
+
+function waitForTurnstile() {
+  if (window.turnstile) {
+    renderTurnstile();
+    return;
+  }
+  window.setTimeout(waitForTurnstile, 100);
 }
 
 function switchMode(nextMode) {
@@ -46,7 +77,7 @@ function switchMode(nextMode) {
   setMessage('');
   authForm.reset();
   authTitle.textContent = mode === 'login' ? '登录' : '创建账号';
-  authDescription.textContent = mode === 'login' ? '进入你的私人空间' : '创建一个仅属于此设备的账号';
+  authDescription.textContent = mode === 'login' ? '进入你的私人空间' : '注册后可在不同设备登录';
   submitLabel.textContent = mode === 'login' ? '进入' : '完成注册';
   passwordInput.autocomplete = mode === 'login' ? 'current-password' : 'new-password';
   confirmPasswordInput.required = mode === 'register';
@@ -60,62 +91,69 @@ function switchMode(nextMode) {
     tab.classList.toggle('is-active', isSelected);
     tab.setAttribute('aria-selected', String(isSelected));
   });
+
+  if (mode === 'register') {
+    waitForTurnstile();
+  } else {
+    resetTurnstile();
+  }
 }
 
-function register(username, password, confirmPassword) {
-  if (password !== confirmPassword) {
-    setMessage('两次输入的密码不一致。', 'error');
-    return;
+async function sendAuthRequest(endpoint, payload) {
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const error = new Error(result.error || '请求失败，请稍后重试。');
+    error.resetTurnstile = result.resetTurnstile;
+    throw error;
   }
-
-  const users = readUsers();
-  if (users[username]) {
-    setMessage('这个账号已经存在。', 'error');
-    return;
-  }
-
-  users[username] = { password };
-  writeUsers(users);
-  enterMain(username);
-}
-
-function login(username, password) {
-  const users = readUsers();
-  if (!users[username] || users[username].password !== password) {
-    setMessage('账号或密码不正确。', 'error');
-    return;
-  }
-
-  enterMain(username);
+  return result;
 }
 
 tabs.forEach((tab) => {
   tab.addEventListener('click', () => switchMode(tab.dataset.authMode));
 });
 
-authForm.addEventListener('submit', (event) => {
+authForm.addEventListener('submit', async (event) => {
   event.preventDefault();
+  setMessage('');
+
   const formData = new FormData(authForm);
-  const username = normalizeUsername(formData.get('username') || '');
-  const password = formData.get('password') || '';
-  const confirmPassword = formData.get('confirmPassword') || '';
+  const username = String(formData.get('username') || '').trim();
+  const password = String(formData.get('password') || '');
+  const confirmPassword = String(formData.get('confirmPassword') || '');
 
-  if (!username || !password) {
-    setMessage('请填写账号和密码。', 'error');
+  if (mode === 'register' && password !== confirmPassword) {
+    setMessage('两次输入的密码不一致。', 'error');
+    return;
+  }
+  if (mode === 'register' && !turnstileToken) {
+    setMessage('请先完成人机验证。', 'error');
     return;
   }
 
-  if (mode === 'register') {
-    register(username, password, confirmPassword);
-    return;
+  setSubmitting(true);
+  try {
+    const endpoint = mode === 'login' ? '/api/login' : '/api/register';
+    await sendAuthRequest(endpoint, {
+      username,
+      password,
+      turnstileToken: mode === 'register' ? turnstileToken : undefined,
+    });
+    window.location.replace('/main');
+  } catch (error) {
+    setMessage(error.message, 'error');
+    if (mode === 'register' && error.resetTurnstile) resetTurnstile();
+  } finally {
+    setSubmitting(false);
   }
-
-  login(username, password);
 });
 
-const activeSession = localStorage.getItem(STORAGE_KEYS.session);
-if (activeSession && readUsers()[activeSession]) {
-  window.location.replace('main.html');
-} else {
-  localStorage.removeItem(STORAGE_KEYS.session);
-}
+fetch('/api/session', { credentials: 'same-origin' }).then((response) => {
+  if (response.ok) window.location.replace('/main');
+});

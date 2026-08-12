@@ -1,28 +1,31 @@
-const STORAGE_KEYS = {
-  users: 'shenqingUsers',
-  session: 'shenqingSession',
-};
+const currentUser = document.querySelector('#currentUser');
+const logoutButton = document.querySelector('#logoutButton');
 
-function readUsers() {
+async function loadSession() {
   try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEYS.users)) || {};
+    const response = await fetch('/api/session', {
+      credentials: 'same-origin',
+      cache: 'no-store',
+    });
+    if (!response.ok) throw new Error('Unauthorized');
+    const session = await response.json();
+    currentUser.textContent = session.username;
+    document.body.classList.remove('session-loading');
   } catch {
-    return {};
+    window.location.replace('/');
   }
 }
 
-const activeSession = localStorage.getItem(STORAGE_KEYS.session);
-const users = readUsers();
-
-if (!activeSession || !users[activeSession]) {
-  localStorage.removeItem(STORAGE_KEYS.session);
-  window.location.replace('./');
-} else {
-  document.querySelector('#currentUser').textContent = activeSession;
-  document.body.classList.remove('session-loading');
-}
-
-document.querySelector('#logoutButton').addEventListener('click', () => {
-  localStorage.removeItem(STORAGE_KEYS.session);
-  window.location.replace('./');
+logoutButton.addEventListener('click', async () => {
+  logoutButton.disabled = true;
+  try {
+    await fetch('/api/logout', {
+      method: 'POST',
+      credentials: 'same-origin',
+    });
+  } finally {
+    window.location.replace('/');
+  }
 });
+
+loadSession();
