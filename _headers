@@ -15,6 +15,15 @@
 /styles.css
   Cache-Control: no-cache
 
+/main.html
+  Cache-Control: no-cache
+
+/main.js
+  Cache-Control: no-cache
+
+/main.css
+  Cache-Control: no-cache
+
 /assets/*
   Cache-Control: public, max-age=604800, immutable
 
