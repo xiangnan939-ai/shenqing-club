@@ -13,6 +13,8 @@ const logoutButton = document.querySelector('#logoutButton');
 const registerOnlyFields = document.querySelectorAll('.register-only');
 const passwordInput = document.querySelector('#password');
 const confirmPasswordInput = document.querySelector('#confirmPassword');
+const authEyebrow = document.querySelector('#authEyebrow');
+const authTitle = document.querySelector('#authTitle');
 
 let mode = 'login';
 
@@ -53,6 +55,8 @@ function switchMode(nextMode) {
   setMessage('');
   authForm.reset();
   submitButton.textContent = mode === 'login' ? '登录' : '创建账号';
+  authEyebrow.textContent = mode === 'login' ? '欢迎回来' : '新的抵达';
+  authTitle.textContent = mode === 'login' ? '登录账号' : '创建账号';
   passwordInput.autocomplete = mode === 'login' ? 'current-password' : 'new-password';
   confirmPasswordInput.required = mode === 'register';
 

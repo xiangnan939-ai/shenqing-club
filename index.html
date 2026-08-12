@@ -15,13 +15,24 @@
   </head>
   <body class="auth-loading">
     <section class="auth-view" aria-label="登录注册">
-      <div class="auth-shell">
-        <div class="auth-brand" aria-label="深情.club">
-          <span>深情.club</span>
-          <strong>在夜色抵达前，先确认来处。</strong>
+      <div class="auth-frame">
+        <header class="auth-topbar" aria-label="深情.club">
+          <span class="brand-mark">深</span>
+          <span class="brand-name">深情.club</span>
+        </header>
+
+        <div class="auth-copy">
+          <p class="auth-kicker">PRIVATE COAST</p>
+          <h1>把海风留给会抵达的人。</h1>
+          <p>登录后进入这一片暮色，安静、私密，只放下一张图。</p>
         </div>
 
-        <div class="auth-panel">
+        <aside class="auth-panel">
+          <div class="auth-panel-head">
+            <p id="authEyebrow">欢迎回来</p>
+            <h2 id="authTitle">登录账号</h2>
+          </div>
+
           <div class="auth-tabs" role="tablist" aria-label="账号">
             <button class="auth-tab is-active" type="button" role="tab" aria-selected="true" data-auth-mode="login">登录</button>
             <button class="auth-tab" type="button" role="tab" aria-selected="false" data-auth-mode="register">注册</button>
@@ -41,7 +52,7 @@
 
             <button class="auth-submit" type="submit">登录</button>
           </form>
-        </div>
+        </aside>
       </div>
     </section>
 
