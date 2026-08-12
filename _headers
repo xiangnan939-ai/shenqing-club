@@ -3,5 +3,20 @@
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=()
 
+/
+  Cache-Control: no-cache
+
+/index.html
+  Cache-Control: no-cache
+
+/app.js
+  Cache-Control: no-cache
+
+/styles.css
+  Cache-Control: no-cache
+
+/assets/*
+  Cache-Control: public, max-age=604800, immutable
+
 /private/hero.png
   Cache-Control: private, no-store

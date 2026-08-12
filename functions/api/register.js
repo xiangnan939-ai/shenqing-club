@@ -26,9 +26,23 @@ export async function onRequestPost(context) {
     return json({ error: '密码需为 8 到 128 位字符。' }, 400);
   }
 
-  const human = await verifyTurnstile(turnstileToken, context.request, context.env.TURNSTILE_SECRET_KEY);
-  if (!human) {
-    return json({ error: '人机验证失败，请重新验证。', resetTurnstile: true }, 400);
+  const verification = await verifyTurnstile(
+    turnstileToken,
+    context.request,
+    context.env.TURNSTILE_SECRET_KEY,
+  );
+  if (!verification.success) {
+    const configurationError = verification.errorCodes.some((code) => [
+      'invalid-input-secret',
+      'missing-input-secret',
+      'siteverify-unavailable',
+    ].includes(code));
+    return json({
+      error: configurationError
+        ? '注册验证服务暂时不可用，请稍后重试。'
+        : '人机验证失败，请重新验证。',
+      resetTurnstile: true,
+    }, configurationError ? 503 : 400);
   }
 
   const existing = await context.env.DB.prepare(

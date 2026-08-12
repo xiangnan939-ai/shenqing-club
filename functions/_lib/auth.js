@@ -139,18 +139,25 @@ export async function readSession(request, secret) {
 }
 
 export async function verifyTurnstile(token, request, secret) {
-  if (!token || !secret) return false;
+  if (!token || !secret) return { success: false, errorCodes: ['missing-input'] };
   const remoteIp = request.headers.get('CF-Connecting-IP');
-  const response = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      secret,
-      response: token,
-      remoteip: remoteIp || undefined,
-    }),
-  });
-  if (!response.ok) return false;
-  const result = await response.json();
-  return result.success === true;
+  try {
+    const response = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        secret,
+        response: token,
+        ...(remoteIp ? { remoteip: remoteIp } : {}),
+      }),
+    });
+    if (!response.ok) return { success: false, errorCodes: ['siteverify-unavailable'] };
+    const result = await response.json();
+    return {
+      success: result.success === true,
+      errorCodes: Array.isArray(result['error-codes']) ? result['error-codes'] : [],
+    };
+  } catch {
+    return { success: false, errorCodes: ['siteverify-unavailable'] };
+  }
 }
