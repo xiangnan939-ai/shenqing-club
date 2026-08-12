@@ -1,6 +1,6 @@
 import { readSession } from './_lib/auth.js';
 
-const PROTECTED_PATHS = ['/main', '/main.html', '/main.css', '/main.js', '/assets/hero.png'];
+const PROTECTED_PATHS = ['/main', '/main.html', '/main.css', '/main.js', '/private/hero.png'];
 
 export async function onRequest(context) {
   const url = new URL(context.request.url);
