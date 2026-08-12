@@ -14,55 +14,57 @@
     <script src="app.js" defer></script>
   </head>
   <body class="auth-loading">
-    <section class="auth-view" aria-label="登录注册">
-      <div class="gate">
-        <div class="gate-media" aria-hidden="true">
-          <img src="assets/hero.png" alt="">
-        </div>
+    <section class="auth-view" aria-labelledby="authTitle">
+      <div class="photo-side">
+        <img src="assets/hero.png" alt="暮色中的海岸与山路" width="1672" height="941">
 
-        <div class="gate-content">
-          <header class="gate-header">
-            <a class="gate-logo" href="/" aria-label="深情.club 首页">
-              <span>深</span>
-              <strong>深情.club</strong>
-            </a>
-            <p>private image room</p>
-          </header>
+        <a class="brand" href="/" aria-label="深情.club 首页">
+          <span class="brand-mark" aria-hidden="true">深</span>
+          <span>深情.club</span>
+        </a>
 
-          <div class="gate-statement">
-            <p class="gate-label">access after dusk</p>
-            <h1>晚风留给你。</h1>
-          </div>
-
-          <section class="gate-access" aria-label="账号访问">
-            <div class="mode-switch" role="tablist" aria-label="账号">
-              <button class="mode-button is-active" type="button" role="tab" aria-selected="true" data-auth-mode="login">登录</button>
-              <button class="mode-button" type="button" role="tab" aria-selected="false" data-auth-mode="register">注册</button>
-            </div>
-
-            <form class="gate-form" id="authForm" autocomplete="on">
-              <div class="field-row">
-                <label for="username">账号</label>
-                <input id="username" name="username" type="text" autocomplete="username" required minlength="2" maxlength="24" placeholder="name">
-              </div>
-
-              <div class="field-row">
-                <label for="password">密码</label>
-                <input id="password" name="password" type="password" autocomplete="current-password" required minlength="6" placeholder="password">
-              </div>
-
-              <div class="field-row register-only is-hidden">
-                <label for="confirmPassword">确认</label>
-                <input id="confirmPassword" name="confirmPassword" type="password" autocomplete="new-password" minlength="6" placeholder="repeat">
-              </div>
-
-              <button class="gate-submit" type="submit">进入</button>
-            </form>
-
-            <p class="gate-message" id="authMessage" aria-live="polite"></p>
-          </section>
+        <div class="photo-caption">
+          <p>SHENQING · PRIVATE SPACE</p>
+          <h2>去看海，<br>直到世界安静。</h2>
         </div>
       </div>
+
+      <main class="auth-side">
+        <div class="auth-content">
+          <header class="auth-heading">
+            <p class="section-label">PRIVATE ACCESS</p>
+            <h1 id="authTitle">欢迎回来</h1>
+            <p id="authDescription">登录后，继续看那片海。</p>
+          </header>
+
+          <div class="auth-tabs" role="tablist" aria-label="账号操作">
+            <button class="auth-tab is-active" type="button" role="tab" aria-selected="true" data-auth-mode="login">登录</button>
+            <button class="auth-tab" type="button" role="tab" aria-selected="false" data-auth-mode="register">注册</button>
+          </div>
+
+          <form class="auth-form" id="authForm" autocomplete="on">
+            <div class="form-field">
+              <label for="username">账号</label>
+              <input id="username" name="username" type="text" autocomplete="username" required minlength="2" maxlength="24" placeholder="请输入账号">
+            </div>
+
+            <div class="form-field">
+              <label for="password">密码</label>
+              <input id="password" name="password" type="password" autocomplete="current-password" required minlength="6" placeholder="至少 6 位字符">
+            </div>
+
+            <div class="form-field register-only is-hidden">
+              <label for="confirmPassword">确认密码</label>
+              <input id="confirmPassword" name="confirmPassword" type="password" autocomplete="new-password" minlength="6" placeholder="再次输入密码">
+            </div>
+
+            <p class="auth-message" id="authMessage" aria-live="polite"></p>
+            <button class="auth-submit" type="submit">登录</button>
+          </form>
+
+          <p class="auth-note">账号信息仅保存在当前设备</p>
+        </div>
+      </main>
     </section>
 
     <main class="app-view" aria-label="深情.club">
