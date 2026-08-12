@@ -3,74 +3,122 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="登录深情.club">
+    <meta name="description" content="登录深情俱乐部">
     <meta property="og:title" content="深情.club">
-    <meta property="og:description" content="登录深情.club">
+    <meta property="og:description" content="登录深情俱乐部">
     <meta property="og:type" content="website">
-    <title>登录 · 深情.club</title>
-    <link rel="stylesheet" href="styles.css?v=2">
-    <script src="app.js?v=2" defer></script>
+    <title>深情俱乐部</title>
+    <link rel="stylesheet" href="styles.css?v=3">
+    <script src="app.js?v=3" defer></script>
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" defer></script>
   </head>
   <body>
-    <header class="site-header">
-      <a class="brand" href="/" aria-label="深情.club 登录页">
-        <span class="brand-mark" aria-hidden="true">深</span>
-        <span>深情.club</span>
-      </a>
-      <span class="site-status">PRIVATE SPACE</span>
-    </header>
+    <main class="book-room">
+      <div class="book-stage" id="bookStage" data-view="login">
+        <div class="book" id="authBook">
+          <section class="book-page" id="bookPage" aria-hidden="true">
+            <div class="page-panel is-active" data-page="register">
+              <button class="close-book" type="button" aria-label="返回登录页" data-close-book>
+                <span aria-hidden="true">&larr;</span>
+                <span>合上书本</span>
+              </button>
 
-    <main class="auth-page">
-      <p class="backdrop-word" aria-hidden="true">深情</p>
+              <header class="page-heading">
+                <p>NEW MEMBER</p>
+                <h2>注册账号</h2>
+                <span>写下你的名字，从这里开始。</span>
+              </header>
 
-      <section class="auth-dialog" aria-labelledby="authTitle">
-        <header class="dialog-heading">
-          <p class="dialog-kicker">WELCOME</p>
-          <h1 id="authTitle">登录</h1>
-          <p id="authDescription">进入你的私人空间</p>
-        </header>
+              <form class="page-form" id="registerForm" autocomplete="on">
+                <label class="page-field" for="registerUsername">
+                  <span>账号</span>
+                  <input id="registerUsername" name="username" type="text" autocomplete="username" required minlength="2" maxlength="24" placeholder="2-24 位字符">
+                </label>
 
-        <div class="auth-tabs" role="tablist" aria-label="账号操作">
-          <button class="auth-tab is-active" type="button" role="tab" aria-selected="true" data-auth-mode="login">登录</button>
-          <button class="auth-tab" type="button" role="tab" aria-selected="false" data-auth-mode="register">注册</button>
+                <label class="page-field" for="registerPassword">
+                  <span>密码</span>
+                  <input id="registerPassword" name="password" type="password" autocomplete="new-password" required minlength="8" maxlength="128" placeholder="至少 8 位字符">
+                </label>
+
+                <label class="page-field" for="confirmPassword">
+                  <span>确认密码</span>
+                  <input id="confirmPassword" name="confirmPassword" type="password" autocomplete="new-password" required minlength="8" maxlength="128" placeholder="再次输入密码">
+                </label>
+
+                <div class="turnstile-row">
+                  <span>人机验证</span>
+                  <div id="turnstileWidget"></div>
+                </div>
+
+                <p class="form-message" id="registerMessage" aria-live="polite"></p>
+                <button class="page-submit" id="registerSubmit" type="submit">完成注册</button>
+              </form>
+            </div>
+
+            <div class="page-panel" data-page="recovery" hidden>
+              <button class="close-book" type="button" aria-label="返回登录页" data-close-book>
+                <span aria-hidden="true">&larr;</span>
+                <span>合上书本</span>
+              </button>
+
+              <header class="page-heading recovery-heading">
+                <p>RECOVERY</p>
+                <h2>忘记密码</h2>
+                <span>先确认账号，再继续处理。</span>
+              </header>
+
+              <form class="page-form recovery-form" id="recoveryForm" autocomplete="on">
+                <label class="page-field" for="recoveryUsername">
+                  <span>账号</span>
+                  <input id="recoveryUsername" name="username" type="text" autocomplete="username" required minlength="2" maxlength="24" placeholder="输入注册账号">
+                </label>
+
+                <div class="recovery-note" id="recoveryNote">
+                  <span class="note-index">01</span>
+                  <p>当前账号暂未绑定邮箱。提交后会显示安全的人工重置指引。</p>
+                </div>
+
+                <p class="form-message" id="recoveryMessage" aria-live="polite"></p>
+                <button class="page-submit" type="submit">继续</button>
+              </form>
+            </div>
+          </section>
+
+          <section class="book-cover" id="bookCover" aria-labelledby="loginTitle">
+            <div class="cover-face cover-front">
+              <div class="cover-content">
+                <header class="cover-heading">
+                  <h1 id="loginTitle">深情俱乐部</h1>
+                  <span class="title-underline" aria-hidden="true"></span>
+                  <p>输入账号密码以进入</p>
+                </header>
+
+                <form class="login-form" id="loginForm" autocomplete="on">
+                  <label class="cover-field" for="loginUsername">
+                    <span>账号：</span>
+                    <input id="loginUsername" name="username" type="text" autocomplete="username" required minlength="2" maxlength="24" aria-label="账号">
+                  </label>
+
+                  <label class="cover-field" for="loginPassword">
+                    <span>密码：</span>
+                    <input id="loginPassword" name="password" type="password" autocomplete="current-password" required minlength="8" maxlength="128" aria-label="密码">
+                  </label>
+
+                  <p class="form-message cover-message" id="loginMessage" aria-live="polite"></p>
+                  <button class="open-button" id="loginSubmit" type="submit">打开</button>
+                </form>
+
+                <nav class="cover-links" aria-label="账号帮助">
+                  <button type="button" data-open-page="register">注册账号</button>
+                  <span aria-hidden="true"></span>
+                  <button type="button" data-open-page="recovery">忘记密码</button>
+                </nav>
+              </div>
+            </div>
+            <div class="cover-face cover-back" aria-hidden="true"></div>
+          </section>
         </div>
-
-        <form class="auth-form" id="authForm" autocomplete="on">
-          <div class="form-field">
-            <label for="username">账号</label>
-            <input id="username" name="username" type="text" autocomplete="username" required minlength="2" maxlength="24" placeholder="输入账号">
-          </div>
-
-          <div class="form-field">
-            <label for="password">密码</label>
-            <input id="password" name="password" type="password" autocomplete="current-password" required minlength="8" maxlength="128" placeholder="至少 8 位字符">
-          </div>
-
-          <div class="form-field register-only is-hidden">
-            <label for="confirmPassword">确认密码</label>
-            <input id="confirmPassword" name="confirmPassword" type="password" autocomplete="new-password" minlength="8" maxlength="128" placeholder="再次输入密码">
-          </div>
-
-          <div class="turnstile-row register-only is-hidden">
-            <span>人机验证</span>
-            <div id="turnstileWidget"></div>
-          </div>
-
-          <p class="auth-message" id="authMessage" aria-live="polite"></p>
-          <button class="auth-submit" type="submit">
-            <span>进入</span>
-            <span aria-hidden="true">→</span>
-          </button>
-        </form>
-
-        <p class="auth-note">账号由 Cloudflare 安全保存</p>
-      </section>
+      </div>
     </main>
-
-    <footer class="site-footer">
-      <span>深情.club</span>
-      <span>2026</span>
-    </footer>
   </body>
 </html>

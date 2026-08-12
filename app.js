@@ -1,27 +1,29 @@
-const authForm = document.querySelector('#authForm');
-const tabs = document.querySelectorAll('[data-auth-mode]');
-const submitButton = document.querySelector('.auth-submit');
-const submitLabel = document.querySelector('.auth-submit span:first-child');
-const message = document.querySelector('#authMessage');
-const authTitle = document.querySelector('#authTitle');
-const authDescription = document.querySelector('#authDescription');
-const registerOnlyFields = document.querySelectorAll('.register-only');
-const passwordInput = document.querySelector('#password');
-const confirmPasswordInput = document.querySelector('#confirmPassword');
+const bookStage = document.querySelector('#bookStage');
+const bookPage = document.querySelector('#bookPage');
+const bookCover = document.querySelector('#bookCover');
+const loginForm = document.querySelector('#loginForm');
+const loginSubmit = document.querySelector('#loginSubmit');
+const loginMessage = document.querySelector('#loginMessage');
+const registerForm = document.querySelector('#registerForm');
+const registerSubmit = document.querySelector('#registerSubmit');
+const registerMessage = document.querySelector('#registerMessage');
+const recoveryForm = document.querySelector('#recoveryForm');
+const recoveryMessage = document.querySelector('#recoveryMessage');
+const pagePanels = document.querySelectorAll('[data-page]');
+const pageOpeners = document.querySelectorAll('[data-open-page]');
+const pageClosers = document.querySelectorAll('[data-close-book]');
 
-let mode = 'login';
 let turnstileId = null;
 let turnstileToken = '';
 let turnstileSiteKey = '';
 
-function setMessage(text, tone = 'neutral') {
-  message.textContent = text;
-  message.dataset.tone = tone;
+function setMessage(element, text, tone = 'neutral') {
+  element.textContent = text;
+  element.dataset.tone = tone;
 }
 
-function setSubmitting(isSubmitting) {
-  submitButton.disabled = isSubmitting;
-  submitButton.classList.toggle('is-loading', isSubmitting);
+function setSubmitting(button, isSubmitting) {
+  button.disabled = isSubmitting;
 }
 
 function resetTurnstile() {
@@ -41,30 +43,32 @@ async function loadTurnstileConfig() {
 }
 
 async function renderTurnstile() {
-  if (mode !== 'register' || turnstileId !== null || !window.turnstile) return;
+  if (turnstileId !== null || !window.turnstile) return;
   try {
     await loadTurnstileConfig();
   } catch (error) {
-    setMessage(error.message, 'error');
+    setMessage(registerMessage, error.message, 'error');
     return;
   }
+
   turnstileId = window.turnstile.render('#turnstileWidget', {
     sitekey: turnstileSiteKey,
     theme: 'light',
     size: 'flexible',
     callback(token) {
       turnstileToken = token;
-      setMessage('');
+      setMessage(registerMessage, '');
     },
     'expired-callback': resetTurnstile,
     'error-callback': () => {
       turnstileToken = '';
-      setMessage('人机验证加载失败，请刷新页面重试。', 'error');
+      setMessage(registerMessage, '人机验证加载失败，请刷新页面重试。', 'error');
     },
   });
 }
 
 function waitForTurnstile() {
+  if (bookStage.dataset.view !== 'register') return;
   if (window.turnstile) {
     renderTurnstile();
     return;
@@ -72,31 +76,36 @@ function waitForTurnstile() {
   window.setTimeout(waitForTurnstile, 100);
 }
 
-function switchMode(nextMode) {
-  mode = nextMode;
-  setMessage('');
-  authForm.reset();
-  authTitle.textContent = mode === 'login' ? '登录' : '创建账号';
-  authDescription.textContent = mode === 'login' ? '进入你的私人空间' : '注册后可在不同设备登录';
-  submitLabel.textContent = mode === 'login' ? '进入' : '完成注册';
-  passwordInput.autocomplete = mode === 'login' ? 'current-password' : 'new-password';
-  confirmPasswordInput.required = mode === 'register';
+function openBook(pageName) {
+  setMessage(loginMessage, '');
+  setMessage(registerMessage, '');
+  setMessage(recoveryMessage, '');
 
-  registerOnlyFields.forEach((field) => {
-    field.classList.toggle('is-hidden', mode !== 'register');
+  pagePanels.forEach((panel) => {
+    const isActive = panel.dataset.page === pageName;
+    panel.classList.toggle('is-active', isActive);
+    panel.hidden = !isActive;
   });
 
-  tabs.forEach((tab) => {
-    const isSelected = tab.dataset.authMode === mode;
-    tab.classList.toggle('is-active', isSelected);
-    tab.setAttribute('aria-selected', String(isSelected));
-  });
+  bookStage.dataset.view = pageName;
+  bookPage.setAttribute('aria-hidden', 'false');
+  loginForm.inert = true;
+  bookPage.inert = false;
 
-  if (mode === 'register') {
+  if (pageName === 'register') {
     waitForTurnstile();
+    window.setTimeout(() => document.querySelector('#registerUsername').focus(), 720);
   } else {
-    resetTurnstile();
+    window.setTimeout(() => document.querySelector('#recoveryUsername').focus(), 720);
   }
+}
+
+function closeBook() {
+  bookStage.dataset.view = 'login';
+  bookPage.setAttribute('aria-hidden', 'true');
+  bookPage.inert = true;
+  loginForm.inert = false;
+  window.setTimeout(() => document.querySelector('#loginUsername').focus(), 620);
 }
 
 async function sendAuthRequest(endpoint, payload) {
@@ -115,44 +124,73 @@ async function sendAuthRequest(endpoint, payload) {
   return result;
 }
 
-tabs.forEach((tab) => {
-  tab.addEventListener('click', () => switchMode(tab.dataset.authMode));
+pageOpeners.forEach((button) => {
+  button.addEventListener('click', () => openBook(button.dataset.openPage));
 });
 
-authForm.addEventListener('submit', async (event) => {
-  event.preventDefault();
-  setMessage('');
+pageClosers.forEach((button) => {
+  button.addEventListener('click', closeBook);
+});
 
-  const formData = new FormData(authForm);
+loginForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  setMessage(loginMessage, '');
+  setSubmitting(loginSubmit, true);
+
+  const formData = new FormData(loginForm);
+  try {
+    await sendAuthRequest('/api/login', {
+      username: String(formData.get('username') || '').trim(),
+      password: String(formData.get('password') || ''),
+    });
+    window.location.replace('/main');
+  } catch (error) {
+    setMessage(loginMessage, error.message, 'error');
+  } finally {
+    setSubmitting(loginSubmit, false);
+  }
+});
+
+registerForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  setMessage(registerMessage, '');
+
+  const formData = new FormData(registerForm);
   const username = String(formData.get('username') || '').trim();
   const password = String(formData.get('password') || '');
   const confirmPassword = String(formData.get('confirmPassword') || '');
 
-  if (mode === 'register' && password !== confirmPassword) {
-    setMessage('两次输入的密码不一致。', 'error');
+  if (password !== confirmPassword) {
+    setMessage(registerMessage, '两次输入的密码不一致。', 'error');
     return;
   }
-  if (mode === 'register' && !turnstileToken) {
-    setMessage('请先完成人机验证。', 'error');
+  if (!turnstileToken) {
+    setMessage(registerMessage, '请先完成人机验证。', 'error');
     return;
   }
 
-  setSubmitting(true);
+  setSubmitting(registerSubmit, true);
   try {
-    const endpoint = mode === 'login' ? '/api/login' : '/api/register';
-    await sendAuthRequest(endpoint, {
-      username,
-      password,
-      turnstileToken: mode === 'register' ? turnstileToken : undefined,
-    });
+    await sendAuthRequest('/api/register', { username, password, turnstileToken });
     window.location.replace('/main');
   } catch (error) {
-    setMessage(error.message, 'error');
-    if (mode === 'register' && error.resetTurnstile) resetTurnstile();
+    setMessage(registerMessage, error.message, 'error');
+    if (error.resetTurnstile) resetTurnstile();
   } finally {
-    setSubmitting(false);
+    setSubmitting(registerSubmit, false);
   }
 });
+
+recoveryForm.addEventListener('submit', (event) => {
+  event.preventDefault();
+  setMessage(
+    recoveryMessage,
+    '为保护账号安全，当前不提供自动重置。请联系站点管理员核验身份后处理。',
+    'success',
+  );
+});
+
+bookPage.inert = true;
 
 fetch('/api/session', { credentials: 'same-origin' }).then((response) => {
   if (response.ok) window.location.replace('/main');
