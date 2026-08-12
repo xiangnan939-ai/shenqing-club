@@ -8,8 +8,8 @@
     <meta property="og:description" content="登录深情俱乐部">
     <meta property="og:type" content="website">
     <title>深情俱乐部</title>
-    <link rel="stylesheet" href="styles.css?v=5">
-    <script src="app.js?v=5" defer></script>
+    <link rel="stylesheet" href="styles.css?v=6">
+    <script src="app.js?v=6" defer></script>
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" defer></script>
   </head>
   <body>
@@ -49,11 +49,6 @@
                   <span>邮箱</span>
                   <input id="registerEmail" name="email" type="email" autocomplete="email" required maxlength="254" placeholder="用于绑定账号">
                 </label>
-
-                <div class="turnstile-row">
-                  <span>人机验证</span>
-                  <div id="turnstileWidget"></div>
-                </div>
 
                 <div class="email-code-row">
                   <label class="page-field" for="registerEmailCode">
@@ -133,5 +128,18 @@
         </div>
       </div>
     </main>
+
+    <div class="verification-modal" id="verificationModal" role="dialog" aria-modal="true" aria-labelledby="verificationTitle" hidden>
+      <button class="verification-backdrop" type="button" aria-label="取消验证" data-close-verification></button>
+      <section class="verification-dialog">
+        <button class="verification-close" type="button" aria-label="关闭验证窗口" data-close-verification>&times;</button>
+        <header>
+          <p>SECURITY CHECK</p>
+          <h2 id="verificationTitle">安全验证</h2>
+        </header>
+        <div id="turnstileWidget"></div>
+        <p class="verification-message" id="verificationMessage" aria-live="polite">验证通过后将自动发送验证码</p>
+      </section>
+    </div>
   </body>
 </html>

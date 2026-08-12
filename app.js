@@ -9,6 +9,9 @@ const registerSubmit = document.querySelector('#registerSubmit');
 const registerMessage = document.querySelector('#registerMessage');
 const registerEmail = document.querySelector('#registerEmail');
 const sendEmailCode = document.querySelector('#sendEmailCode');
+const verificationModal = document.querySelector('#verificationModal');
+const verificationMessage = document.querySelector('#verificationMessage');
+const verificationClosers = document.querySelectorAll('[data-close-verification]');
 const recoveryForm = document.querySelector('#recoveryForm');
 const recoveryMessage = document.querySelector('#recoveryMessage');
 const pagePanels = document.querySelectorAll('[data-page]');
@@ -34,6 +37,14 @@ function resetTurnstile() {
   if (window.turnstile && turnstileId !== null) {
     window.turnstile.reset(turnstileId);
   }
+}
+
+function closeVerificationModal({ keepButtonDisabled = false } = {}) {
+  verificationModal.hidden = true;
+  bookStage.inert = false;
+  resetTurnstile();
+  if (!keepButtonDisabled) setSubmitting(sendEmailCode, false);
+  registerEmail.focus();
 }
 
 function startEmailCodeCountdown(seconds) {
@@ -67,33 +78,42 @@ async function renderTurnstile() {
   try {
     await loadTurnstileConfig();
   } catch (error) {
-    setMessage(registerMessage, error.message, 'error');
+    setMessage(verificationMessage, error.message, 'error');
     return;
   }
 
   turnstileId = window.turnstile.render('#turnstileWidget', {
     sitekey: turnstileSiteKey,
     theme: 'light',
-    size: 'flexible',
+    size: window.matchMedia('(max-width: 420px)').matches ? 'compact' : 'flexible',
     callback(token) {
       turnstileToken = token;
-      setMessage(registerMessage, '');
+      requestEmailCode(token);
     },
     'expired-callback': resetTurnstile,
     'error-callback': () => {
       turnstileToken = '';
-      setMessage(registerMessage, '人机验证加载失败，请刷新页面重试。', 'error');
+      setMessage(verificationMessage, '人机验证加载失败，请关闭后重试。', 'error');
     },
   });
 }
 
 function waitForTurnstile() {
-  if (bookStage.dataset.view !== 'register') return;
+  if (verificationModal.hidden) return;
   if (window.turnstile) {
     renderTurnstile();
     return;
   }
   window.setTimeout(waitForTurnstile, 100);
+}
+
+function openVerificationModal() {
+  setMessage(verificationMessage, '验证通过后将自动发送验证码');
+  verificationModal.hidden = false;
+  bookStage.inert = true;
+  setSubmitting(sendEmailCode, true);
+  waitForTurnstile();
+  document.querySelector('.verification-close').focus();
 }
 
 function openBook(pageName) {
@@ -113,7 +133,6 @@ function openBook(pageName) {
   bookPage.inert = false;
 
   if (pageName === 'register') {
-    waitForTurnstile();
     window.setTimeout(() => document.querySelector('#registerUsername').focus(), 720);
   } else {
     window.setTimeout(() => document.querySelector('#recoveryUsername').focus(), 720);
@@ -121,6 +140,7 @@ function openBook(pageName) {
 }
 
 function closeBook() {
+  if (!verificationModal.hidden) closeVerificationModal();
   bookStage.dataset.view = 'login';
   bookPage.setAttribute('aria-hidden', 'true');
   bookPage.inert = true;
@@ -212,30 +232,34 @@ registerForm.addEventListener('submit', async (event) => {
   }
 });
 
-sendEmailCode.addEventListener('click', async () => {
-  setMessage(registerMessage, '');
-  if (!registerEmail.reportValidity()) return;
-  if (!turnstileToken) {
-    setMessage(registerMessage, '请先完成人机验证。', 'error');
-    return;
-  }
-
-  setSubmitting(sendEmailCode, true);
+async function requestEmailCode(token) {
+  setMessage(verificationMessage, '验证通过，正在发送…');
   try {
     const result = await sendAuthRequest('/api/email-code', {
       email: registerEmail.value.trim(),
-      turnstileToken,
+      turnstileToken: token,
     });
+    closeVerificationModal({ keepButtonDisabled: true });
     setMessage(registerMessage, '验证码已发送，10 分钟内有效。', 'success');
     startEmailCodeCountdown(result.retryAfter);
-    resetTurnstile();
     document.querySelector('#registerEmailCode').focus();
   } catch (error) {
+    closeVerificationModal({ keepButtonDisabled: Boolean(error.retryAfter) });
     setMessage(registerMessage, error.message, 'error');
-    if (error.resetTurnstile) resetTurnstile();
     if (error.retryAfter) startEmailCodeCountdown(error.retryAfter);
-    else setSubmitting(sendEmailCode, false);
   }
+}
+
+sendEmailCode.addEventListener('click', () => {
+  setMessage(registerMessage, '');
+  if (!registerEmail.reportValidity()) return;
+  openVerificationModal();
+});
+
+verificationClosers.forEach((closer) => closer.addEventListener('click', () => closeVerificationModal()));
+
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && !verificationModal.hidden) closeVerificationModal();
 });
 
 recoveryForm.addEventListener('submit', (event) => {
