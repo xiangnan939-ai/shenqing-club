@@ -30,6 +30,9 @@
 /zhao-game.css
   Cache-Control: no-cache
 
+/game/*
+  Cache-Control: no-cache
+
 /assets/*
   Cache-Control: public, max-age=604800, immutable
 

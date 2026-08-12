@@ -1,544 +1,642 @@
-(() => {
-  const game = document.querySelector('#zhaoGame');
-  const shell = game?.querySelector('.zy-game-shell');
-  const openButton = document.querySelector('#openZhaoGame');
-  const closeButton = document.querySelector('#closeZhaoGame');
-  const restartButton = document.querySelector('#restartZhaoGame');
-  const introModal = document.querySelector('#zyIntroModal');
-  const resultModal = document.querySelector('#zyResultModal');
-  const startButton = document.querySelector('#startZhaoGame');
-  const playAgainButton = document.querySelector('#zyPlayAgain');
-  const leaveResultButton = document.querySelector('#zyLeaveResult');
-  const board = document.querySelector('#zyPlayerBoard');
-  const enemyRanks = document.querySelector('#zyEnemyRanks');
-  const recruitButton = document.querySelector('#zyRecruit');
-  const shovelButton = document.querySelector('#zyShovel');
-  const heroButton = document.querySelector('#zySeekHero');
+import {
+  GAMEPLAY_CONFIG,
+  GENERALS,
+  ITEMS,
+  QUALITY_LABELS,
+  RANKS,
+  SOLDIERS,
+  WEAPONS,
+} from './game/config.mjs';
+import { BattleSession, FakeAdService, GameRules, SaveService, SeededRng } from './game/core.mjs';
 
-  if (!game || !openButton) return;
+const game = document.querySelector('#zhaoGame');
+const shell = document.querySelector('#zyGameShell');
+const live = document.querySelector('#zyLive');
+const openButton = document.querySelector('#openZhaoGame');
 
-  const ui = {
-    buns: document.querySelector('#zyBuns'),
-    wave: document.querySelector('#zyWaveLabel'),
-    playerHearts: document.querySelector('#zyPlayerHearts'),
-    enemyHearts: document.querySelector('#zyEnemyHearts'),
-    enemyType: document.querySelector('#zyEnemyType'),
-    timer: document.querySelector('#zyBattleTimer'),
-    health: document.querySelector('#zyEnemyHealthBar'),
-    message: document.querySelector('#zyBattleMessage'),
-    power: document.querySelector('#zyPowerLabel'),
-    recruitCost: document.querySelector('#zyRecruitCost'),
-    shovelCost: document.querySelector('#zyShovelCost'),
-    heroCost: document.querySelector('#zyHeroCost'),
-    resultTitle: document.querySelector('#zyResultTitle'),
-    resultEyebrow: document.querySelector('#zyResultEyebrow'),
-    resultWaves: document.querySelector('#zyResultWaves'),
-    resultPower: document.querySelector('#zyResultPower'),
+if (game && shell && openButton) {
+  const saveService = new SaveService(window.localStorage);
+  const adService = new FakeAdService();
+  let meta = saveService.load();
+  let screen = 'home';
+  let previousScreen = 'home';
+  let merchantTab = 'shop';
+  let deckTab = 'deck';
+  let battle = null;
+  let battleTimer = null;
+  let matchTimer = null;
+  let overlay = null;
+  let selected = null;
+  let pendingItem = null;
+  let toastTimer = null;
+  let resultClaiming = false;
+  let debugVisible = false;
+  let pointerDrag = null;
+  let suppressNextCellClick = false;
+
+  const icons = {
+    back: '<svg aria-hidden="true" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"></path></svg>',
+    close: '<svg aria-hidden="true" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"></path></svg>',
+    gear: '<svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.56V21h-4v-.08A1.7 1.7 0 0 0 9 19.36a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.63 15 1.7 1.7 0 0 0 3.08 14H3v-4h.08A1.7 1.7 0 0 0 4.64 9 1.7 1.7 0 0 0 4.3 7.12l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.63a1.7 1.7 0 0 0 1-1.55V3h4v.08A1.7 1.7 0 0 0 15 4.64a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.37 9a1.7 1.7 0 0 0 1.55 1H21v4h-.08A1.7 1.7 0 0 0 19.4 15z"></path></svg>',
+    pause: '<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"></path></svg>',
+    deck: '<svg aria-hidden="true" viewBox="0 0 24 24"><rect x="4" y="3" width="14" height="18" rx="2"></rect><path d="M8 7h6M8 11h6M8 15h4"></path></svg>',
   };
 
-  const soldierTypes = ['刀', '枪', '骑', '弓'];
-  const fragmentTypes = ['赵', '云', '关', '羽', '张', '飞', '黄', '忠'];
-  const heroPairs = [
-    { first: '赵', second: '云', name: '赵云', power: 45 },
-    { first: '关', second: '羽', name: '关羽', power: 42 },
-    { first: '张', second: '飞', name: '张飞', power: 40 },
-    { first: '黄', second: '忠', name: '黄忠', power: 44 },
-  ];
-  const soldierPower = { 刀: 7, 枪: 9, 骑: 8, 弓: 10 };
-  const enemyNames = ['黄巾 · 刀兵', '虎豹 · 骑兵', '长弓 · 弓兵', '铁甲 · 枪兵'];
-  const enemySymbols = ['刀', '骑', '弓', '枪'];
-  const BOARD_SIZE = 15;
-  const INITIAL_UNLOCKED = 8;
-  const WAVE_SECONDS = 13;
-  let timerId;
-  let state;
-  let selectedIndex = null;
-  let dragIndex = null;
-  let lastTick = 0;
-  let incomeClock = 0;
-  let attackClock = 0;
-  let nextWaveClock = 0;
-
-  function freshState() {
-    return {
-      active: false,
-      over: false,
-      wave: 1,
-      buns: 40,
-      playerHearts: 3,
-      enemyHearts: 3,
-      recruitCost: 10,
-      shovelCost: 24,
-      heroCost: 32,
-      recruits: 0,
-      unlocked: INITIAL_UNLOCKED,
-      units: Array(BOARD_SIZE).fill(null),
-      enemyMaxHealth: 62,
-      enemyHealth: 62,
-      timeLeft: WAVE_SECONDS,
-      highestPower: 0,
-      pendingWave: false,
-      clearedWaves: 0,
-    };
-  }
-
-  function unitPower(unit) {
-    if (!unit) return 0;
-    if (unit.kind === 'hero') return unit.power * (1 + (unit.level - 1) * 0.75);
-    if (unit.kind === 'fragment') return 0;
-    return soldierPower[unit.type] * 2 ** (unit.level - 1);
-  }
-
-  function totalPower() {
-    return Math.round(state.units.reduce((sum, unit) => sum + unitPower(unit), 0));
-  }
-
-  function battlePower() {
-    const enemyType = enemySymbols[(state.wave - 1) % enemySymbols.length];
-    return state.units.reduce((sum, unit) => {
-      if (!unit) return sum;
-      let multiplier = 1;
-      if (unit.kind === 'soldier') {
-        const countersEnemy =
-          (enemyType === '弓' && (unit.type === '刀' || unit.type === '枪')) ||
-          (enemyType === '骑' && unit.type === '弓') ||
-          ((enemyType === '刀' || enemyType === '枪') && unit.type === '骑');
-        const counteredByEnemy =
-          (unit.type === '弓' && (enemyType === '刀' || enemyType === '枪')) ||
-          (unit.type === '骑' && enemyType === '弓') ||
-          ((unit.type === '刀' || unit.type === '枪') && enemyType === '骑');
-        if (countersEnemy) multiplier = 1.35;
-        else if (counteredByEnemy) multiplier = 0.78;
-      }
-      return sum + unitPower(unit) * multiplier;
-    }, 0);
-  }
-
-  function emptyUnlockedCells() {
-    return state.units
-      .map((unit, index) => ({ unit, index }))
-      .filter(({ unit, index }) => index < state.unlocked && unit === null)
-      .map(({ index }) => index);
-  }
-
-  function randomItem(items) {
-    return items[Math.floor(Math.random() * items.length)];
-  }
-
-  function renderHearts(container, count) {
-    container.replaceChildren();
-    container.setAttribute('aria-label', `剩余 ${count} 条命`);
-    for (let index = 0; index < 3; index += 1) {
-      const heart = document.createElement('span');
-      heart.className = `zy-heart${index >= count ? ' is-lost' : ''}`;
-      heart.textContent = '♥';
-      container.append(heart);
-    }
-  }
-
-  function renderBoard(newIndex = null) {
-    board.replaceChildren();
-    state.units.forEach((unit, index) => {
-      const cell = document.createElement('button');
-      cell.className = 'zy-cell';
-      cell.type = 'button';
-      cell.dataset.index = String(index);
-
-      if (index >= state.unlocked) {
-        cell.classList.add('is-locked');
-        cell.disabled = true;
-        cell.setAttribute('aria-label', '未开垦阵地');
-      } else if (!unit) {
-        cell.setAttribute('aria-label', `空阵地 ${index + 1}`);
-      } else {
-        const unitElement = document.createElement('span');
-        unitElement.className = 'zy-unit';
-        unitElement.dataset.kind = unit.kind;
-        unitElement.dataset.type = unit.type;
-        unitElement.draggable = true;
-        unitElement.textContent = unit.type;
-
-        if (unit.kind !== 'fragment') {
-          const level = document.createElement('small');
-          level.className = 'zy-unit-level';
-          level.textContent = `Lv.${unit.level}`;
-          unitElement.append(level);
-        }
-
-        cell.setAttribute('aria-label', `${unit.type}${unit.kind === 'fragment' ? '武将文字' : `${unit.level}级`}`);
-        cell.append(unitElement);
-      }
-
-      if (index === selectedIndex) cell.classList.add('is-selected');
-      if (index === newIndex) cell.classList.add('is-new');
-      if (selectedIndex !== null && canMerge(selectedIndex, index)) cell.classList.add('is-merge-target');
-      board.append(cell);
-    });
-  }
-
-  function renderEnemy() {
-    const enemyIndex = (state.wave - 1) % enemySymbols.length;
-    const enemyCount = Math.min(5, 2 + Math.floor((state.wave - 1) / 2));
-    enemyRanks.replaceChildren();
-    for (let index = 0; index < enemyCount; index += 1) {
-      const unit = document.createElement('span');
-      unit.className = 'zy-enemy-unit';
-      unit.textContent = enemySymbols[enemyIndex];
-      const level = document.createElement('small');
-      level.textContent = `Lv.${Math.ceil(state.wave / 3)}`;
-      unit.append(level);
-      enemyRanks.append(unit);
-    }
-    ui.enemyType.textContent = enemyNames[enemyIndex];
-  }
-
-  function render() {
-    const power = totalPower();
-    state.highestPower = Math.max(state.highestPower, power);
-    ui.buns.textContent = String(Math.floor(state.buns));
-    ui.wave.textContent = `第 ${state.wave} 波`;
-    ui.power.textContent = `战力 ${power}`;
-    ui.recruitCost.textContent = String(state.recruitCost);
-    ui.shovelCost.textContent = String(state.shovelCost);
-    ui.heroCost.textContent = String(state.heroCost);
-    ui.timer.textContent = state.pendingWave ? '整军中' : `来袭 ${Math.max(0, Math.ceil(state.timeLeft))} 秒`;
-    ui.health.style.transform = `scaleX(${Math.max(0, state.enemyHealth / state.enemyMaxHealth)})`;
-    recruitButton.disabled = state.over || state.buns < state.recruitCost || emptyUnlockedCells().length === 0;
-    shovelButton.disabled = state.over || state.buns < state.shovelCost || state.unlocked >= BOARD_SIZE;
-    heroButton.disabled = state.over || state.buns < state.heroCost || emptyUnlockedCells().length === 0;
-    renderHearts(ui.playerHearts, state.playerHearts);
-    renderHearts(ui.enemyHearts, state.enemyHearts);
-  }
-
-  function showMessage(message) {
-    ui.message.textContent = message;
-  }
-
-  function floatText(message) {
-    const text = document.createElement('p');
-    text.className = 'zy-float-text';
-    text.textContent = message;
-    shell.append(text);
-    window.setTimeout(() => text.remove(), 920);
-  }
-
-  function shake() {
-    shell.classList.remove('zy-screen-shake');
-    void shell.offsetWidth;
-    shell.classList.add('zy-screen-shake');
-  }
-
-  function canMerge(from, to) {
-    if (from === to || from === null || to >= state.unlocked) return false;
-    const source = state.units[from];
-    const target = state.units[to];
-    return Boolean(
-      source &&
-      target &&
-      source.kind !== 'fragment' &&
-      source.kind === target.kind &&
-      source.type === target.type &&
-      source.level === target.level,
-    );
-  }
-
-  function handleCellAction(index) {
-    if (state.over || index >= state.unlocked) return;
-
-    if (selectedIndex === null) {
-      if (state.units[index]) {
-        selectedIndex = index;
-        renderBoard();
-        showMessage('再点一个格子移动、交换或合成');
-      }
-      return;
-    }
-
-    if (selectedIndex === index) {
-      selectedIndex = null;
-      renderBoard();
-      return;
-    }
-
-    moveOrMerge(selectedIndex, index);
-    selectedIndex = null;
-  }
-
-  function moveOrMerge(from, to) {
-    const source = state.units[from];
-    const target = state.units[to];
-    if (!source || to >= state.unlocked) return;
-
-    if (canMerge(from, to)) {
-      target.level += 1;
-      state.units[from] = null;
-      floatText(`${target.type} · 升至 ${target.level} 级`);
-      showMessage('合成成功，战力大幅提升');
-      renderBoard(to);
-      render();
-      return;
-    }
-
-    state.units[to] = source;
-    state.units[from] = target;
-    showMessage(target ? '交换位置' : '完成部署');
-    renderBoard(to);
-    render();
-  }
-
-  function placeUnit(unit) {
-    const emptyCells = emptyUnlockedCells();
-    if (!emptyCells.length) {
-      showMessage('阵地已满，请合成或扩地');
-      return false;
-    }
-    const index = randomItem(emptyCells);
-    state.units[index] = unit;
-    renderBoard(index);
-    render();
-    return true;
-  }
-
-  function recruit() {
-    if (state.buns < state.recruitCost || !emptyUnlockedCells().length) return;
-    state.buns -= state.recruitCost;
-    state.recruits += 1;
-    if (state.recruits % 3 === 0) state.recruitCost += 2;
-    const type = randomItem(soldierTypes);
-    placeUnit({ kind: 'soldier', type, level: 1 });
-    showMessage(`${type}兵入阵，相同文字可以合成`);
-  }
-
-  function expandLand() {
-    if (state.buns < state.shovelCost || state.unlocked >= BOARD_SIZE) return;
-    state.buns -= state.shovelCost;
-    state.unlocked += 1;
-    state.shovelCost += 9;
-    renderBoard(state.unlocked - 1);
-    render();
-    floatText('开垦一格');
-    showMessage('阵地扩大，可以部署更多文字兵');
-  }
-
-  function seekHero() {
-    if (state.buns < state.heroCost || !emptyUnlockedCells().length) return;
-    state.buns -= state.heroCost;
-    state.heroCost += 6;
-    const type = randomItem(fragmentTypes);
-    placeUnit({ kind: 'fragment', type, level: 1 });
-    showMessage(`获得武将文字「${type}」，凑齐姓名即可出阵`);
-    combineHeroIfReady();
-  }
-
-  function combineHeroIfReady() {
-    for (const hero of heroPairs) {
-      const firstIndex = state.units.findIndex((unit) => unit?.kind === 'fragment' && unit.type === hero.first);
-      const secondIndex = state.units.findIndex((unit) => unit?.kind === 'fragment' && unit.type === hero.second);
-      if (firstIndex === -1 || secondIndex === -1) continue;
-
-      state.units[firstIndex] = { kind: 'hero', type: hero.name, level: 1, power: hero.power };
-      state.units[secondIndex] = null;
-      renderBoard(firstIndex);
-      render();
-      floatText(`${hero.name} · 出阵`);
-      showMessage(`${hero.name}已激活，武将可与同名武将继续合成`);
-      return;
-    }
-  }
-
-  function setupWave() {
-    state.pendingWave = false;
-    state.enemyMaxHealth = 48 + state.wave * 28 + Math.floor(state.wave / 3) * 18;
-    state.enemyHealth = state.enemyMaxHealth;
-    state.timeLeft = WAVE_SECONDS;
-    nextWaveClock = 0;
-    renderEnemy();
-    render();
-    showMessage(`第 ${state.wave} 波来袭，文字兵自动迎敌`);
-  }
-
-  function clearWave() {
-    state.pendingWave = true;
-    state.clearedWaves += 1;
-    const reward = 11 + state.wave * 3;
-    state.buns += reward;
-    floatText(`破敌 · 馒 +${reward}`);
-
-    if (state.wave % 3 === 0) {
-      state.enemyHearts -= 1;
-      shake();
-      if (state.enemyHearts <= 0) {
-        finishGame(true);
-        return;
-      }
-      showMessage('攻破敌阵，敌方阿斗失去一条命');
-    } else {
-      showMessage('敌军溃退，下一波正在集结');
-    }
-
-    state.wave += 1;
-    render();
-  }
-
-  function failWave() {
-    state.pendingWave = true;
-    state.playerHearts -= 1;
-    shake();
-    floatText('敌军破阵');
-    if (state.playerHearts <= 0) {
-      finishGame(false);
-      return;
-    }
-    state.wave += 1;
-    showMessage('阿斗失去一条命，迅速补充兵力');
-    render();
-  }
-
-  function finishGame(victory) {
-    state.active = false;
-    state.over = true;
-    stopTimer();
-    render();
-    ui.resultEyebrow.textContent = victory ? '长坂坡 · 凯旋' : '长坂坡 · 战败';
-    ui.resultTitle.textContent = victory ? '守护成功' : '阿斗失守';
-    ui.resultWaves.textContent = String(state.clearedWaves);
-    ui.resultPower.textContent = String(state.highestPower);
-    resultModal.hidden = false;
-  }
-
-  function tick(time) {
-    if (!state.active || state.over || game.hidden) return;
-    const elapsed = Math.min(0.5, (time - lastTick) / 1000 || 0);
-    lastTick = time;
-    incomeClock += elapsed;
-    attackClock += elapsed;
-
-    if (incomeClock >= 2) {
-      const income = Math.floor(incomeClock / 2);
-      state.buns += income;
-      incomeClock %= 2;
-    }
-
-    if (state.pendingWave) {
-      nextWaveClock += elapsed;
-      if (nextWaveClock >= 1.7) setupWave();
-      render();
-      return;
-    }
-
-    const power = battlePower();
-    const heroBonus = state.units.some((unit) => unit?.type === '赵云') ? 1.18 : 1;
-    const damage = power * heroBonus * elapsed;
-    state.enemyHealth -= damage;
-    state.timeLeft -= elapsed;
-
-    if (attackClock >= 0.75 && power > 0) {
-      attackClock = 0;
-      const occupied = [...board.querySelectorAll('.zy-cell')].filter((cell) => state.units[Number(cell.dataset.index)]);
-      const attacker = randomItem(occupied)?.querySelector('.zy-unit');
-      if (attacker) {
-        attacker.classList.remove('is-hit');
-        void attacker.offsetWidth;
-        attacker.classList.add('is-hit');
-      }
-    }
-
-    if (state.enemyHealth <= 0) clearWave();
-    else if (state.timeLeft <= 0) failWave();
-    else render();
-  }
-
-  function startTimer() {
-    stopTimer();
-    lastTick = performance.now();
-    timerId = window.setInterval(() => tick(performance.now()), 100);
-  }
-
-  function stopTimer() {
-    if (timerId) window.clearInterval(timerId);
-    timerId = undefined;
-  }
-
-  function resetGame({ showIntro = false } = {}) {
-    stopTimer();
-    state = freshState();
-    selectedIndex = null;
-    incomeClock = 0;
-    attackClock = 0;
-    nextWaveClock = 0;
-    resultModal.hidden = true;
-    introModal.hidden = !showIntro;
-    renderBoard();
-    renderEnemy();
-    render();
-    showMessage('部署文字兵，守住阿斗');
-    if (!showIntro) {
-      state.active = true;
-      startTimer();
-    }
+  function showToast(message) {
+    live.textContent = message;
+    live.classList.add('is-visible');
+    clearTimeout(toastTimer);
+    toastTimer = window.setTimeout(() => live.classList.remove('is-visible'), 1800);
   }
 
   function openGame() {
+    meta = saveService.load();
     game.hidden = false;
     document.body.classList.add('zy-game-open');
-    if (!state) resetGame({ showIntro: true });
-    else if (!state.over && introModal.hidden) {
-      state.active = true;
-      startTimer();
-    }
-    closeButton.focus();
+    go('home');
   }
 
   function closeGame() {
-    stopTimer();
-    if (state) state.active = false;
+    stopBattleClock();
+    clearTimeout(matchTimer);
+    if (battle && !battle.over) battle.setPaused(true);
     game.hidden = true;
     document.body.classList.remove('zy-game-open');
     openButton.focus();
   }
 
-  board.addEventListener('click', (event) => {
-    const cell = event.target.closest('.zy-cell');
-    if (cell) handleCellAction(Number(cell.dataset.index));
+  function go(next) {
+    stopBattleClock();
+    clearTimeout(matchTimer);
+    previousScreen = screen;
+    screen = next;
+    overlay = null;
+    selected = null;
+    pendingItem = null;
+    render();
+  }
+
+  function render() {
+    if (screen === 'home') renderHome();
+    else if (screen === 'merchant') renderMerchant();
+    else if (screen === 'weapons') renderWeapons();
+    else if (screen === 'settings') renderSettings();
+    else if (screen === 'match') renderMatch();
+    else if (screen === 'battle') renderBattle();
+    else if (screen === 'result') renderResult();
+  }
+
+  function pageBar(title, right = '') {
+    return `<header class="zy-page-bar">
+      <button class="zy-icon-button" data-action="back" type="button" aria-label="返回">${icons.back}</button>
+      <h1>${title}</h1>
+      ${right || '<span></span>'}
+    </header>`;
+  }
+
+  function renderHome() {
+    const rank = RANKS[meta.rank.tierIndex];
+    const stars = Array.from({ length: rank.starsToAdvance }, (_, index) => index < meta.rank.stars ? '◆' : '◇').join('');
+    shell.innerHTML = `<main class="zy-screen zy-home" aria-label="游戏主页">
+      <header class="zy-home-top">
+        <button class="zy-icon-button" data-action="exit-app" type="button" aria-label="退出游戏">${icons.back}</button>
+        <span></span>
+        <div class="zy-meta-resources">
+          <div class="zy-resource-pill"><i>金</i><b>${meta.coins}</b></div>
+          <button class="zy-resource-pill energy" data-action="refill-energy" type="button" aria-label="补充体力"><i>力</i><b>${meta.energy}/${GAMEPLAY_CONFIG.meta.maxEnergy}</b></button>
+          <button class="zy-icon-button" data-action="settings" type="button" aria-label="设置">${icons.gear}</button>
+        </div>
+      </header>
+      <div class="zy-home-art">
+        <section class="zy-title-mark">
+          <small>汉字合成策略塔防</small>
+          <h2>赵云与阿斗</h2>
+          <p>一身是胆 · 长坂救主</p>
+        </section>
+        <section class="zy-rank-seal" aria-label="当前段位 ${rank.name}">
+          <div><small>当前军职</small><strong>${rank.name}</strong><span class="zy-stars">${stars}</span></div>
+        </section>
+        <div class="zy-home-actions">
+          <button class="zy-primary-button" data-action="start-match" type="button">开始游戏 · 体力 ${GAMEPLAY_CONFIG.meta.battleEnergyCost}</button>
+          <div class="zy-secondary-actions">
+            <button class="zy-secondary-button" data-action="merchant" type="button"><span>商</span>神秘商人</button>
+            <button class="zy-secondary-button" data-action="weapons" type="button"><span>兵</span>武器背包</button>
+          </div>
+        </div>
+      </div>
+      <footer class="zy-version">REFERENCE 2026.08 · 本地存档</footer>
+    </main>`;
+  }
+
+  function dailyShopItems() {
+    const rng = new SeededRng(meta.daily.shopSeed);
+    const pool = [...ITEMS];
+    const selectedItems = [];
+    while (pool.length && selectedItems.length < 5) selectedItems.push(pool.splice(Math.floor(rng.next() * pool.length), 1)[0]);
+    return selectedItems;
+  }
+
+  function renderMerchant() {
+    const shopItems = dailyShopItems();
+    const cards = shopItems.map((item) => {
+      const owned = meta.daily.ownedItems.includes(item.id);
+      const equipped = meta.daily.activeLoadout.includes(item.id) || meta.daily.passiveLoadout.includes(item.id);
+      const action = !owned ? `购买 ${item.price}` : equipped ? '卸下' : '装备';
+      return `<article class="zy-shop-card quality-${item.quality}">
+        <div class="zy-quality-icon">${item.name[0]}</div>
+        <div class="zy-card-copy"><small>${QUALITY_LABELS[item.quality]} · ${item.type === 'active' ? '主动' : '被动'}</small><strong>${item.name}</strong><span>${item.description}</span></div>
+        <button class="zy-card-action${equipped ? ' is-equipped' : ''}" data-action="shop-item" data-id="${item.id}" type="button">${action}</button>
+      </article>`;
+    }).join('');
+    const lottery = `<section class="zy-panel" style="margin:18px auto;box-shadow:none">
+      <h2>今日抽奖</h2><p>从今日道具池随机获得一件尚未拥有的道具。抽奖结果会保存到今日结束。</p>
+      <button class="zy-primary-button" data-action="lottery" type="button">抽取一次 · 金币 100</button>
+    </section>`;
+    shell.innerHTML = `<main class="zy-screen" aria-label="神秘商人">
+      ${pageBar('神秘商人')}
+      <nav class="zy-tabbar" aria-label="商人标签"><button class="zy-tab${merchantTab === 'shop' ? ' is-active' : ''}" data-action="merchant-tab" data-tab="shop">商店</button><button class="zy-tab${merchantTab === 'lottery' ? ' is-active' : ''}" data-action="merchant-tab" data-tab="lottery">抽奖</button></nav>
+      <div class="zy-scroll zy-section-body">
+        ${merchantTab === 'shop' ? `<div class="zy-shop-grid">${cards}</div>` : lottery}
+        ${loadoutHtml()}
+        <p class="zy-daily-note">今日道具将在本地日期 00:00 重置，永久武器不受影响。</p>
+      </div>
+    </main>`;
+  }
+
+  function loadoutHtml() {
+    const slots = [];
+    for (let index = 0; index < GAMEPLAY_CONFIG.battle.activeItemSlots; index += 1) {
+      const item = ITEMS.find((entry) => entry.id === meta.daily.activeLoadout[index]);
+      slots.push(`<span class="zy-loadout-slot${item ? ' is-filled' : ''}">${item ? item.name : '主动空位'}</span>`);
+    }
+    for (let index = 0; index < GAMEPLAY_CONFIG.battle.passiveItemSlots; index += 1) {
+      const item = ITEMS.find((entry) => entry.id === meta.daily.passiveLoadout[index]);
+      slots.push(`<span class="zy-loadout-slot${item ? ' is-filled' : ''}">${item ? item.name : '被动空位'}</span>`);
+    }
+    return `<div class="zy-subheading"><strong>我的道具</strong><span>主动 2 · 被动 6</span></div><div class="zy-loadout">${slots.join('')}</div>`;
+  }
+
+  function renderWeapons() {
+    const owned = WEAPONS.filter((weapon) => meta.ownedWeapons.includes(weapon.id));
+    shell.innerHTML = `<main class="zy-screen" aria-label="武器背包">
+      ${pageBar('武器背包')}
+      <div class="zy-scroll zy-section-body">
+        <div class="zy-subheading" style="margin-top:0"><strong>永久武器</strong><span>已装备 ${meta.equippedWeapons.length}/2</span></div>
+        <div class="zy-weapon-list">${owned.map((weapon) => weaponCard(weapon)).join('')}</div>
+        <div class="zy-subheading"><strong>尚未获得</strong><span>${WEAPONS.length - owned.length}</span></div>
+        <div class="zy-weapon-list">${WEAPONS.filter((weapon) => !meta.ownedWeapons.includes(weapon.id)).map((weapon) => weaponCard(weapon, true)).join('')}</div>
+      </div>
+    </main>`;
+  }
+
+  function weaponCard(weapon, locked = false) {
+    const equipped = meta.equippedWeapons.includes(weapon.id);
+    const quality = weapon.quality;
+    return `<article class="zy-weapon-card quality-${quality}"${locked ? ' style="opacity:.45"' : ''}>
+      <div class="zy-quality-icon">${weapon.name.at(-1)}</div>
+      <div class="zy-card-copy"><small>${QUALITY_LABELS[quality]} · ${Math.round(weapon.attackBonus * 100)}% 攻击</small><strong>${weapon.name}</strong><span>${weapon.effect}</span></div>
+      <button class="zy-card-action${equipped ? ' is-equipped' : ''}" data-action="weapon" data-id="${weapon.id}" type="button" ${locked ? 'disabled' : ''}>${locked ? '未获得' : equipped ? '卸下' : '装备'}</button>
+    </article>`;
+  }
+
+  function renderSettings() {
+    const rows = [
+      ['music', '音乐'], ['sound', '音效'], ['vibration', '振动反馈'], ['showHealth', '显示生命条'],
+    ].map(([key, label]) => `<div class="zy-setting-row"><span>${label}</span><button class="zy-switch${meta.settings[key] ? ' is-on' : ''}" data-action="toggle-setting" data-key="${key}" type="button" role="switch" aria-checked="${meta.settings[key]}"></button></div>`).join('');
+    shell.innerHTML = `<main class="zy-screen" aria-label="游戏设置">${pageBar('设置')}<div class="zy-scroll zy-section-body">${rows}<p class="zy-daily-note">设置会保存在当前浏览器中。</p></div></main>`;
+  }
+
+  function beginMatch() {
+    if (battle && !battle.over && screen === 'match') return;
+    if (meta.energy < GAMEPLAY_CONFIG.meta.battleEnergyCost) {
+      showToast('体力不足，点击顶部体力可补充');
+      return;
+    }
+    meta.energy -= GAMEPLAY_CONFIG.meta.battleEnergyCost;
+    meta.lastEnergyAt = new Date().toISOString();
+    saveService.save(meta);
+    battle = new BattleSession({
+      seed: (Date.now() ^ Math.floor(Math.random() * 0xffffffff)) >>> 0,
+      playerLoadout: { active: meta.daily.activeLoadout, passive: meta.daily.passiveLoadout },
+      equippedWeapons: meta.equippedWeapons,
+    });
+    go('match');
+    matchTimer = window.setTimeout(startBattle, 1700);
+  }
+
+  function renderMatch() {
+    const rank = RANKS[meta.rank.tierIndex];
+    shell.innerHTML = `<main class="zy-screen zy-match" aria-label="匹配完成">
+      <h1>匹配完成</h1>
+      <section class="zy-match-player"><div class="zy-match-avatar">赵</div><div><strong>常山赵子龙</strong><span>${rank.name} · 本局技能 ${meta.daily.activeLoadout.length + meta.daily.passiveLoadout.length}</span></div></section>
+      <div class="zy-vs">VS</div>
+      <section class="zy-match-player is-opponent"><div><strong>${battle.profile.name}</strong><span>${battle.profile.rank} · 胜率 ${battle.profile.winRate}</span></div><div class="zy-match-avatar">${battle.profile.avatar}</div></section>
+      <button class="zy-primary-button" data-action="skip-match" type="button">进入战场</button>
+    </main>`;
+  }
+
+  function startBattle() {
+    clearTimeout(matchTimer);
+    if (!battle || battle.over) return;
+    screen = 'battle';
+    battle.setPaused(false);
+    renderBattle();
+    startBattleClock();
+  }
+
+  function startBattleClock() {
+    stopBattleClock();
+    battleTimer = window.setInterval(() => {
+      if (!battle || battle.paused || battle.over) return;
+      battle.tick(GAMEPLAY_CONFIG.battle.tickMs / 1000);
+      if (battle.over) {
+        stopBattleClock();
+        go('result');
+      } else if (screen === 'battle' && !overlay && !pointerDrag) {
+        renderBattle();
+      }
+    }, GAMEPLAY_CONFIG.battle.tickMs);
+  }
+
+  function stopBattleClock() {
+    if (battleTimer) window.clearInterval(battleTimer);
+    battleTimer = null;
+  }
+
+  function renderBattle() {
+    const snapshot = battle.snapshot();
+    shell.innerHTML = `<main class="zy-screen zy-battle" aria-label="战斗">
+      <header class="zy-battle-hud">
+        <button class="zy-icon-button" data-action="pause" type="button" aria-label="暂停">${icons.pause}</button>
+        <div class="zy-battle-title"><small>${snapshot.map.name}</small><strong>${snapshot.enemy.boss ? `BOSS · ${snapshot.enemy.name}` : snapshot.enemy.name}</strong></div>
+        <span class="zy-wave-chip">第 ${snapshot.wave} 波 · ${Math.max(0, Math.ceil(snapshot.waveTime))}s</span>
+        <button class="zy-icon-button" data-action="deck" type="button" aria-label="牌库与图鉴">${icons.deck}</button>
+      </header>
+      <div class="zy-battle-main">
+        <section class="zy-opponent-zone" aria-label="对手战场">
+          ${sideMetaHtml(snapshot.opponent, snapshot.profile.name, true)}
+          <div class="zy-mini-board">${miniBoardHtml(snapshot.opponent)}</div>
+        </section>
+        <section class="zy-wave-zone" aria-label="波次压力">
+          <div class="zy-wave-row"><span>我方防线</span><strong>${snapshot.enemy.name}</strong><span>对手防线</span></div>
+          <div class="zy-dual-bars"><div class="zy-pressure"><span style="transform:scaleX(${pressureRatio(snapshot.player)})"></span></div><div class="zy-pressure is-ai"><span style="transform:scaleX(${pressureRatio(snapshot.opponent)})"></span></div></div>
+          <div class="zy-event-line">${snapshot.lastEvent}</div>
+        </section>
+        <section class="zy-player-zone" aria-label="玩家战场">
+          <div class="zy-player-heading"><span>我方阵地 · 战力 <strong>${Math.round(GameRules.sidePower(battle.player))}</strong></span><span>${heartsHtml(snapshot.player.adouHp, snapshot.player.maxAdouHp)} 阿斗</span></div>
+          <div class="zy-board">${boardHtml(snapshot.player)}</div>
+          <div class="zy-reserve-row"><div class="zy-reserve-label">备战<br>${snapshot.player.reserve.filter(Boolean).length}/5</div>${reserveHtml(snapshot.player)}</div>
+        </section>
+      </div>
+      <footer class="zy-command-bar" aria-label="战斗操作">
+        <button class="zy-command" data-action="recruit" type="button" ${canRecruit(snapshot.player) ? '' : 'disabled'}><span class="zy-command-symbol">兵</span><strong>征兵</strong><small>馒 ${GameRules.currentRecruitCost(snapshot.player)} · 现有 ${Math.floor(snapshot.player.buns)}</small></button>
+        <button class="zy-command" data-action="open-land" type="button" ${canOpenLand(snapshot.player) ? '' : 'disabled'}><span class="zy-command-symbol">铲</span><strong>扩地</strong><small>馒 ${GameRules.currentLandCost(snapshot.player)}</small></button>
+        <button class="zy-command" data-action="use-item-menu" type="button" ${snapshot.player.activeItems.every((id) => snapshot.player.usedItems.includes(id)) ? 'disabled' : ''}><span class="zy-command-symbol">技</span><strong>技能</strong><small>${snapshot.player.activeItems.length} 个</small></button>
+        <button class="zy-command" data-action="recycle" type="button" ${selected ? '' : 'disabled'}><span class="zy-command-symbol">炉</span><strong>回收</strong><small>选中单位</small></button>
+      </footer>
+      ${overlayHtml(snapshot)}
+    </main>`;
+  }
+
+  function sideMetaHtml(side, name, opponent = false) {
+    return `<div class="zy-side-meta"><span class="zy-adou">斗</span><div class="zy-hearts">${heartsHtml(side.adouHp, side.maxAdouHp)}</div><small>${name}<br>馒 ${Math.floor(side.buns)}</small></div>`;
+  }
+
+  function miniBoardHtml(side) {
+    return side.board.slice(0, 10).map((unit) => `<div class="zy-mini-cell">${unit ? `${unit.char}<small>${unit.level}</small>` : ''}</div>`).join('');
+  }
+
+  function boardHtml(side) {
+    return side.board.map((unit, index) => {
+      if (index >= side.unlocked) return `<button class="zy-cell is-locked" type="button" disabled aria-label="未开垦阵地"></button>`;
+      const isSelected = selected?.location === 'board' && selected.index === index;
+      return `<button class="zy-cell${isSelected ? ' is-selected' : ''}" data-action="cell" data-location="board" data-index="${index}" data-occupied="${Boolean(unit)}" type="button" aria-label="${unit ? unit.char : `空阵地 ${index + 1}`}">${unitHtml(unit)}</button>`;
+    }).join('');
+  }
+
+  function reserveHtml(side) {
+    return side.reserve.map((unit, index) => {
+      const isSelected = selected?.location === 'reserve' && selected.index === index;
+      return `<button class="zy-reserve-cell${isSelected ? ' is-selected' : ''}" data-action="cell" data-location="reserve" data-index="${index}" data-occupied="${Boolean(unit)}" type="button" aria-label="${unit ? unit.char : `空备战位 ${index + 1}`}">${unitHtml(unit)}</button>`;
+    }).join('');
+  }
+
+  function unitHtml(unit) {
+    if (!unit) return '';
+    const expNeeded = GAMEPLAY_CONFIG.battle.generalExpCurve[unit.level] || 1;
+    const exp = unit.kind === 'general' ? `<span class="zy-exp"><span style="width:${Math.min(100, unit.exp / expNeeded * 100)}%"></span></span>` : '';
+    return `<span class="zy-unit" data-kind="${unit.kind}">${unit.char}<small class="zy-level">Lv.${unit.level}</small>${exp}</span>`;
+  }
+
+  function heartsHtml(count, max = GAMEPLAY_CONFIG.battle.initialAdouHp) {
+    return Array.from({ length: max }, (_, index) => `<span class="zy-heart${index >= count ? ' is-lost' : ''}">♥</span>`).join('');
+  }
+
+  function pressureRatio(side) {
+    return Math.max(0, Math.min(1, side.pressureHp / side.pressureMaxHp));
+  }
+
+  function canRecruit(side) {
+    return side.buns >= GameRules.currentRecruitCost(side) && side.reserve.some((unit) => !unit);
+  }
+
+  function canOpenLand(side) {
+    return side.unlocked < GAMEPLAY_CONFIG.battle.boardSize && (side.freeLand || side.buns >= GameRules.currentLandCost(side));
+  }
+
+  function overlayHtml(snapshot) {
+    if (!overlay) return '';
+    if (overlay === 'pause') return pauseOverlay();
+    if (overlay === 'deck') return deckOverlay(snapshot);
+    if (overlay === 'items') return itemOverlay(snapshot);
+    if (overlay === 'debug') return debugOverlay(snapshot);
+    return '';
+  }
+
+  function pauseOverlay() {
+    return `<div class="zy-overlay" role="dialog" aria-modal="true" aria-label="暂停"><div class="zy-panel"><h2>战斗暂停</h2><p>波次、敌军、AI、农民产出与技能计时均已冻结。</p><div class="zy-pause-actions"><button class="zy-primary-button" data-action="resume" type="button">继续战斗</button><button class="zy-secondary-button" data-action="settings-from-battle" type="button">战斗设置</button><button class="zy-text-button" data-action="quit-battle" type="button">退出本局</button></div></div></div>`;
+  }
+
+  function deckOverlay(snapshot) {
+    const weights = Object.entries(GAMEPLAY_CONFIG.recruitment.baseWeights).map(([id, weight]) => `<div class="zy-probability"><strong>${SOLDIERS[id].char}</strong><small>${weight}%</small></div>`).join('');
+    const pool = Object.entries(snapshot.player.pool).map(([char, count]) => `<span class="zy-pool-char" style="position:relative;opacity:${count ? 1 : 0.35}">${char}<small>${count}</small></span>`).join('');
+    const gallery = GENERALS.map((general) => `<article class="zy-general-entry${snapshot.player.gallery.includes(general.id) ? '' : ' is-locked'}"><strong>${general.name}</strong><small>${general.chars.join(' + ')}</small><small>${general.skill}</small></article>`).join('');
+    return `<div class="zy-overlay" role="dialog" aria-modal="true" aria-label="牌库与图鉴"><div class="zy-panel">
+      <h2>${deckTab === 'deck' ? '牌库' : '图鉴'}</h2>
+      <nav class="zy-tabbar" style="margin:0 -24px 18px"><button class="zy-tab${deckTab === 'deck' ? ' is-active' : ''}" data-action="deck-tab" data-tab="deck">牌库</button><button class="zy-tab${deckTab === 'gallery' ? ' is-active' : ''}" data-action="deck-tab" data-tab="gallery">图鉴</button></nav>
+      ${deckTab === 'deck' ? `<div class="zy-deck-probabilities">${weights}<div class="zy-probability"><strong>将</strong><small>${(GAMEPLAY_CONFIG.recruitment.generalChance + snapshot.player.generalChanceBonus).toFixed(1)}%</small></div></div><div class="zy-subheading"><strong>剩余武将文字</strong><span>有限牌池</span></div><div class="zy-char-pool">${pool}</div>` : `<div class="zy-gallery-grid">${gallery}</div>`}
+      <button class="zy-primary-button" data-action="close-overlay" type="button">返回战场</button>
+    </div></div>`;
+  }
+
+  function itemOverlay(snapshot) {
+    const available = snapshot.player.activeItems.filter((id) => !snapshot.player.usedItems.includes(id));
+    return `<div class="zy-overlay" role="dialog" aria-modal="true" aria-label="主动技能"><div class="zy-panel"><h2>主动技能</h2><p>目标型技能选中后，再点击一个单位施放。</p><div class="zy-shop-grid">${available.map((id) => {
+      const item = ITEMS.find((entry) => entry.id === id);
+      return `<article class="zy-shop-card quality-${item.quality}"><div class="zy-quality-icon">${item.name[0]}</div><div class="zy-card-copy"><strong>${item.name}</strong><span>${item.description}</span></div><button class="zy-card-action" data-action="use-item" data-id="${item.id}">使用</button></article>`;
+    }).join('') || '<p class="zy-daily-note">本局没有可用主动技能。</p>'}</div><button class="zy-text-button" data-action="close-overlay">返回战场</button></div></div>`;
+  }
+
+  function debugOverlay(snapshot) {
+    return `<div class="zy-overlay" role="dialog" aria-modal="true" aria-label="调试信息"><div class="zy-panel"><h2>Debug Overlay</h2><p style="text-align:left;font-family:ui-monospace,monospace;white-space:pre-wrap">seed: ${snapshot.seed}\nsession: ${snapshot.sessionId}\nwave: ${snapshot.wave} / ${snapshot.waveTime.toFixed(2)}s\nplayer buns: ${snapshot.player.buns.toFixed(1)}\nopponent buns: ${snapshot.opponent.buns.toFixed(1)}\nplayer units: ${snapshot.player.board.filter(Boolean).length}\nopponent units: ${snapshot.opponent.board.filter(Boolean).length}\nAI action: ${snapshot.opponent.lastAction}\nconfig: ${GAMEPLAY_CONFIG.version}</p><button class="zy-primary-button" data-action="close-overlay">关闭</button></div></div>`;
+  }
+
+  function renderResult() {
+    const result = battle.result;
+    const alreadyClaimed = meta.claimedSessions.includes(result.sessionId);
+    shell.innerHTML = `<main class="zy-screen zy-match" aria-label="战斗结算">
+      <section class="zy-panel" style="box-shadow:none">
+        <div class="zy-result-seal">${result.victory ? '胜利' : '败北'}</div>
+        <h2>${result.victory ? '守住了阿斗' : '阿斗失守'}</h2>
+        <p>${battle.map.name} · ${battle.profile.name}</p>
+        <div class="zy-result-stats"><span>抵御波次<b>${result.clearedWaves}</b></span><span>最高战力<b>${result.maxPower}</b></span><span>基础金币<b>${result.baseCoins}</b></span></div>
+        <button class="zy-primary-button" data-action="claim-result" type="button" ${alreadyClaimed ? 'disabled' : ''}>${alreadyClaimed ? '奖励已领取' : `领取奖励 · 金币 ${result.baseCoins}`}</button>
+        <button class="zy-secondary-button" style="width:100%;margin-top:9px" data-action="double-result" type="button" ${alreadyClaimed ? 'disabled' : ''}>观看模拟广告 · 双倍金币</button>
+        <button class="zy-text-button" data-action="result-home" type="button">返回主页</button>
+      </section>
+    </main>`;
+  }
+
+  function back() {
+    if (screen === 'home') closeGame();
+    else if (screen === 'settings' && battle && !battle.over && previousScreen === 'battle') {
+      screen = 'battle';
+      battle.setPaused(false);
+      overlay = null;
+      renderBattle();
+      startBattleClock();
+    } else go('home');
+  }
+
+  function buyOrEquipItem(id) {
+    const item = ITEMS.find((entry) => entry.id === id);
+    if (!item) return;
+    const owned = meta.daily.ownedItems.includes(id);
+    const loadoutKey = item.type === 'active' ? 'activeLoadout' : 'passiveLoadout';
+    const limit = item.type === 'active' ? GAMEPLAY_CONFIG.battle.activeItemSlots : GAMEPLAY_CONFIG.battle.passiveItemSlots;
+    const equipped = meta.daily[loadoutKey].includes(id);
+    if (!owned) {
+      if (meta.coins < item.price) return showToast('金币不足');
+      meta.coins -= item.price;
+      meta.daily.ownedItems.push(id);
+      showToast(`已购入${item.name}`);
+    } else if (equipped) {
+      meta.daily[loadoutKey] = meta.daily[loadoutKey].filter((entry) => entry !== id);
+    } else {
+      if (meta.daily[loadoutKey].length >= limit) return showToast(`${item.type === 'active' ? '主动' : '被动'}槽已满，请先卸下一件`);
+      meta.daily[loadoutKey].push(id);
+    }
+    saveService.save(meta);
+    renderMerchant();
+  }
+
+  function lottery() {
+    if (meta.coins < 100) return showToast('金币不足');
+    const candidates = ITEMS.filter((item) => !meta.daily.ownedItems.includes(item.id));
+    if (!candidates.length) return showToast('今日道具已全部获得');
+    meta.coins -= 100;
+    const rng = new SeededRng(meta.daily.shopSeed ^ meta.coins ^ meta.daily.ownedItems.length);
+    const item = rng.pick(candidates);
+    meta.daily.ownedItems.push(item.id);
+    saveService.save(meta);
+    showToast(`抽得「${item.name}」`);
+    renderMerchant();
+  }
+
+  function toggleWeapon(id) {
+    if (!meta.ownedWeapons.includes(id)) return;
+    if (meta.equippedWeapons.includes(id)) meta.equippedWeapons = meta.equippedWeapons.filter((entry) => entry !== id);
+    else if (meta.equippedWeapons.length >= 2) return showToast('最多装备两件武器');
+    else meta.equippedWeapons.push(id);
+    saveService.save(meta);
+    renderWeapons();
+  }
+
+  async function refillEnergy() {
+    if (meta.energy >= GAMEPLAY_CONFIG.meta.maxEnergy) return showToast('体力已经满了');
+    showToast('正在播放模拟奖励广告');
+    const result = await adService.showRewarded('energy_refill');
+    if (result.rewarded) {
+      meta.energy = Math.min(GAMEPLAY_CONFIG.meta.maxEnergy, meta.energy + 5);
+      saveService.save(meta);
+      renderHome();
+      showToast('体力 +5');
+    }
+  }
+
+  function handleCell(location, index) {
+    if (pendingItem) {
+      const result = battle.executeCommand('player', { type: 'UseItem', itemId: pendingItem, target: { location, index } });
+      pendingItem = null;
+      showToast(result.message || '该目标无法使用此技能');
+      renderBattle();
+      return;
+    }
+    const side = battle.player;
+    const collection = location === 'reserve' ? side.reserve : side.board;
+    const unit = collection[index];
+    if (!selected) {
+      if (unit) selected = { location, index };
+      renderBattle();
+      return;
+    }
+    if (selected.location === location && selected.index === index) {
+      selected = null;
+      renderBattle();
+      return;
+    }
+    let result;
+    if (selected.location === 'reserve' && location === 'board') result = battle.executeCommand('player', { type: 'Deploy', from: selected.index, to: index });
+    else if (selected.location === 'board' && location === 'board') result = battle.executeCommand('player', { type: 'Move', from: selected.index, to: index });
+    else result = { ok: false, reason: 'invalid_move' };
+    if (!result.ok) showToast(result.reason === 'illegal_merge' ? '这两个文字不能合成' : '无法放到这里');
+    else showToast(result.general ? `${result.general.name}出阵` : result.action === 'merge' ? '合成升级' : '部署完成');
+    selected = null;
+    renderBattle();
+  }
+
+  function useItem(id) {
+    const item = ITEMS.find((entry) => entry.id === id);
+    if (['item_mine', 'item_haste'].includes(id)) {
+      battle.setPaused(false);
+      const result = battle.executeCommand('player', { type: 'UseItem', itemId: id, target: null });
+      overlay = null;
+      showToast(result.message || '技能无法使用');
+      renderBattle();
+      return;
+    }
+    pendingItem = id;
+    overlay = null;
+    battle.setPaused(false);
+    showToast(`请选择${item.name}的目标单位`);
+    renderBattle();
+    startBattleClock();
+  }
+
+  async function claimResult(double = false) {
+    if (resultClaiming || meta.claimedSessions.includes(battle.result.sessionId)) return;
+    resultClaiming = true;
+    let multiplier = 1;
+    if (double) {
+      battle.setPaused(true);
+      const ad = await adService.showRewarded('result_double_coin');
+      if (ad.rewarded) multiplier = 2;
+    }
+    const claim = saveService.claimResult(meta, battle.result, multiplier);
+    resultClaiming = false;
+    if (claim.claimed) showToast(`金币 +${claim.coins} · 星数 ${claim.stars >= 0 ? '+' : ''}${claim.stars}`);
+    renderResult();
+  }
+
+  shell.addEventListener('click', (event) => {
+    const button = event.target.closest('[data-action]');
+    if (!button) return;
+    const action = button.dataset.action;
+    if (action === 'exit-app') closeGame();
+    else if (action === 'back') back();
+    else if (action === 'settings') go('settings');
+    else if (action === 'merchant') go('merchant');
+    else if (action === 'weapons') go('weapons');
+    else if (action === 'refill-energy') refillEnergy();
+    else if (action === 'start-match') beginMatch();
+    else if (action === 'merchant-tab') { merchantTab = button.dataset.tab; renderMerchant(); }
+    else if (action === 'shop-item') buyOrEquipItem(button.dataset.id);
+    else if (action === 'lottery') lottery();
+    else if (action === 'weapon') toggleWeapon(button.dataset.id);
+    else if (action === 'toggle-setting') {
+      const key = button.dataset.key;
+      meta.settings[key] = !meta.settings[key];
+      saveService.save(meta);
+      renderSettings();
+    }
+    else if (action === 'skip-match') startBattle();
+    else if (action === 'pause') { battle.setPaused(true); overlay = 'pause'; renderBattle(); }
+    else if (action === 'resume') { battle.setPaused(false); overlay = null; renderBattle(); startBattleClock(); }
+    else if (action === 'settings-from-battle') { previousScreen = 'battle'; screen = 'settings'; renderSettings(); }
+    else if (action === 'quit-battle') { battle.finish(false); go('result'); }
+    else if (action === 'deck') { battle.setPaused(true); overlay = 'deck'; renderBattle(); }
+    else if (action === 'deck-tab') { deckTab = button.dataset.tab; renderBattle(); }
+    else if (action === 'close-overlay') { overlay = null; debugVisible = false; battle.setPaused(false); renderBattle(); startBattleClock(); }
+    else if (action === 'recruit') {
+      const result = battle.executeCommand('player', { type: 'Recruit' });
+      showToast(result.ok ? `征得「${result.unit.char}」` : result.reason === 'reserve_full' ? '备战栏已满' : '馒头不足');
+      renderBattle();
+    }
+    else if (action === 'open-land') {
+      const result = battle.executeCommand('player', { type: 'OpenLand' });
+      showToast(result.ok ? '开垦一格阵地' : '暂时无法扩地');
+      renderBattle();
+    }
+    else if (action === 'cell') {
+      if (suppressNextCellClick) suppressNextCellClick = false;
+      else handleCell(button.dataset.location, Number(button.dataset.index));
+    }
+    else if (action === 'recycle' && selected) {
+      const result = battle.executeCommand('player', { type: 'Recycle', location: selected.location, index: selected.index });
+      selected = null;
+      showToast(result.ok ? `回收获得馒头 ${result.refund}` : '无法回收');
+      renderBattle();
+    }
+    else if (action === 'use-item-menu') { battle.setPaused(true); overlay = 'items'; renderBattle(); }
+    else if (action === 'use-item') useItem(button.dataset.id);
+    else if (action === 'claim-result') claimResult(false);
+    else if (action === 'double-result') claimResult(true);
+    else if (action === 'result-home') go('home');
   });
 
-  board.addEventListener('dragstart', (event) => {
-    const cell = event.target.closest('.zy-cell');
-    if (!cell || !state.units[Number(cell.dataset.index)]) return;
-    dragIndex = Number(cell.dataset.index);
-    event.dataTransfer.effectAllowed = 'move';
-    event.dataTransfer.setData('text/plain', String(dragIndex));
+  shell.addEventListener('pointerdown', (event) => {
+    const cell = event.target.closest('[data-action="cell"][data-occupied="true"]');
+    if (!cell || screen !== 'battle' || overlay) return;
+    pointerDrag = {
+      pointerId: event.pointerId,
+      source: { location: cell.dataset.location, index: Number(cell.dataset.index) },
+      startX: event.clientX,
+      startY: event.clientY,
+      moved: false,
+    };
+    cell.setPointerCapture?.(event.pointerId);
   });
 
-  board.addEventListener('dragover', (event) => {
-    const cell = event.target.closest('.zy-cell:not(.is-locked)');
-    if (cell) event.preventDefault();
+  shell.addEventListener('pointermove', (event) => {
+    if (!pointerDrag || pointerDrag.pointerId !== event.pointerId) return;
+    if (Math.hypot(event.clientX - pointerDrag.startX, event.clientY - pointerDrag.startY) > 10) {
+      pointerDrag.moved = true;
+      shell.querySelectorAll('.is-drag-over').forEach((element) => element.classList.remove('is-drag-over'));
+      document.elementFromPoint(event.clientX, event.clientY)?.closest('[data-action="cell"]')?.classList.add('is-drag-over');
+    }
   });
 
-  board.addEventListener('drop', (event) => {
-    const cell = event.target.closest('.zy-cell:not(.is-locked)');
-    if (!cell || dragIndex === null) return;
-    event.preventDefault();
-    moveOrMerge(dragIndex, Number(cell.dataset.index));
-    dragIndex = null;
-    selectedIndex = null;
+  shell.addEventListener('pointerup', (event) => {
+    if (!pointerDrag || pointerDrag.pointerId !== event.pointerId) return;
+    const drag = pointerDrag;
+    pointerDrag = null;
+    shell.querySelectorAll('.is-drag-over').forEach((element) => element.classList.remove('is-drag-over'));
+    if (!drag.moved) return;
+    suppressNextCellClick = true;
+    const target = document.elementFromPoint(event.clientX, event.clientY)?.closest('[data-action="cell"]');
+    if (!target) return;
+    selected = drag.source;
+    handleCell(target.dataset.location, Number(target.dataset.index));
   });
 
   openButton.addEventListener('click', openGame);
-  closeButton.addEventListener('click', closeGame);
-  restartButton.addEventListener('click', () => resetGame());
-  startButton.addEventListener('click', () => {
-    introModal.hidden = true;
-    state.active = true;
-    startTimer();
-  });
-  playAgainButton.addEventListener('click', () => resetGame());
-  leaveResultButton.addEventListener('click', closeGame);
-  recruitButton.addEventListener('click', recruit);
-  shovelButton.addEventListener('click', expandLand);
-  heroButton.addEventListener('click', seekHero);
-
   document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape' && !game.hidden) closeGame();
+    if (game.hidden) return;
+    if (event.key === 'F1' && screen === 'battle') {
+      event.preventDefault();
+      debugVisible = !debugVisible;
+      battle.setPaused(debugVisible);
+      overlay = debugVisible ? 'debug' : null;
+      renderBattle();
+      if (!debugVisible) startBattleClock();
+    } else if (event.key === 'Escape') {
+      if (overlay && screen === 'battle') {
+        overlay = null;
+        battle.setPaused(false);
+        renderBattle();
+        startBattleClock();
+      } else if (screen !== 'home') back();
+      else closeGame();
+    }
   });
-})();
+}

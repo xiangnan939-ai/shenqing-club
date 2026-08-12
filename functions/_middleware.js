@@ -7,13 +7,14 @@ const PROTECTED_PATHS = [
   '/main.js',
   '/zhao-game.css',
   '/zhao-game.js',
-  '/assets/zhao-yun-a-dou-icon.png',
+  '/assets/zhao-yun-a-dou-icon-v2.png',
   '/private/hero.png',
 ];
 
 export async function onRequest(context) {
   const url = new URL(context.request.url);
-  if (!PROTECTED_PATHS.includes(url.pathname)) {
+  const isProtected = PROTECTED_PATHS.includes(url.pathname) || url.pathname.startsWith('/game/');
+  if (!isProtected) {
     return context.next();
   }
 
