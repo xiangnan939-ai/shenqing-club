@@ -8,6 +8,7 @@ const PROTECTED_PATHS = [
   '/zhao-game.css',
   '/zhao-game.js',
   '/assets/zhao-yun-a-dou-icon-v2.png',
+  '/assets/zhao-ink-landscape-v1.jpg',
   '/private/hero.png',
 ];
 

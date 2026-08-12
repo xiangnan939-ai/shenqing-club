@@ -286,3 +286,271 @@ button { -webkit-tap-highlight-color: transparent; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition-duration: 0.01ms !important; }
 }
+
+/* Reference-scene rebuild */
+.zy-home {
+  isolation: isolate;
+  background-color: #e8dcc2;
+  background-image: linear-gradient(180deg, rgba(255, 247, 224, 0.08), rgba(31, 24, 18, 0.08)), url("assets/zhao-ink-landscape-v1.jpg");
+  background-position: center;
+  background-size: cover;
+}
+
+.zy-home::after {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(246, 233, 202, 0.2), transparent 30%, transparent 73%, rgba(31, 24, 17, 0.28));
+  content: "";
+  pointer-events: none;
+}
+
+.zy-home-top {
+  z-index: 2;
+  grid-template-columns: 48px minmax(0, 1fr) 42px;
+  align-items: start;
+  padding: calc(12px + env(safe-area-inset-top)) 12px 4px;
+}
+
+.zy-profile-seal {
+  display: grid;
+  width: 46px;
+  height: 46px;
+  place-items: center;
+  border: 2px solid #342a21;
+  border-radius: 5px;
+  padding: 3px;
+  background: #8da4aa;
+  box-shadow: inset 0 0 0 2px #d9e2df, 0 3px 0 rgba(40, 29, 19, 0.22);
+}
+
+.zy-profile-seal span {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  place-items: center;
+  background: #f4e9cf;
+  font-family: "Kaiti SC", "STKaiti", "KaiTi", serif;
+  font-size: 24px;
+  font-weight: 900;
+}
+
+.zy-meta-resources {
+  display: grid;
+  justify-content: start;
+  justify-items: start;
+  gap: 5px;
+  padding-left: 7px;
+}
+
+.zy-resource-pill {
+  height: 30px;
+  min-width: 106px;
+  justify-content: flex-start;
+  border: 2px solid rgba(54, 37, 25, 0.72);
+  border-radius: 4px 18px 18px 4px;
+  padding-right: 14px;
+  background: rgba(66, 43, 30, 0.88);
+  color: #ffe06b;
+  box-shadow: 0 3px 0 rgba(37, 26, 18, 0.18);
+}
+
+.zy-resource-pill i {
+  border: 2px solid #8b5915;
+  background: #f1bb24;
+  color: #4a2e17;
+}
+
+.zy-resource-pill.energy i { background: #df9b2e; color: #fff4cb; }
+.zy-gear-button { margin-top: 3px; background: rgba(234, 222, 194, 0.66); }
+
+.zy-home-art {
+  grid-template-rows: auto auto minmax(120px, 1fr) auto auto;
+  align-content: stretch;
+  padding: 0 18px 12px;
+}
+
+.zy-home-art::before { display: none; }
+.zy-title-mark { align-self: start; margin-top: 5px; }
+.zy-title-mark h2 {
+  margin: 0;
+  color: #9e3328;
+  font-size: clamp(44px, 12vw, 62px);
+  font-weight: 900;
+  text-shadow: 0 2px 0 rgba(255, 245, 216, 0.85), 1px 3px 0 rgba(72, 36, 23, 0.14);
+}
+.zy-title-mark p { margin-top: 5px; color: #3f3024; font-size: 11px; font-weight: 800; }
+
+.zy-rank-card {
+  display: grid;
+  width: 158px;
+  grid-template-columns: 44px 1fr;
+  align-items: center;
+  gap: 9px;
+  margin-top: 8px;
+  border: 2px solid rgba(65, 45, 28, 0.72);
+  border-radius: 3px;
+  padding: 7px 9px;
+  background: rgba(244, 229, 191, 0.84);
+  box-shadow: 5px 6px 0 rgba(79, 52, 27, 0.12);
+  transform: rotate(-1deg);
+}
+.zy-rank-avatar { display: grid; width: 42px; height: 42px; place-items: center; border: 2px solid #58432f; background: #d8e1da; font-family: "Kaiti SC", "STKaiti", "KaiTi", serif; font-size: 22px; font-weight: 900; }
+.zy-rank-card small { display: block; color: #866f51; font-size: 8px; }
+.zy-rank-card strong { display: block; font-family: "Kaiti SC", "STKaiti", "KaiTi", serif; font-size: 21px; }
+.zy-rank-card .zy-stars { justify-content: flex-start; font-size: 9px; }
+
+.zy-home-emblem {
+  position: relative;
+  align-self: center;
+  width: 154px;
+  height: 116px;
+  justify-self: center;
+  color: #191713;
+  font-family: "Kaiti SC", "STKaiti", "KaiTi", serif;
+  font-weight: 900;
+  transform: rotate(-5deg);
+}
+.zy-home-emblem span { position: absolute; top: 19px; left: 4px; font-size: 66px; }
+.zy-home-emblem b { position: absolute; top: 0; left: 65px; font-size: 76px; }
+.zy-home-emblem i { position: absolute; right: 3px; bottom: 2px; color: #a66517; font-size: 50px; font-style: normal; }
+
+.zy-home-actions { align-self: end; width: min(100%, 330px); }
+.zy-start-scroll {
+  position: relative;
+  display: grid;
+  width: 100%;
+  min-height: 69px;
+  grid-template-columns: 44px 1fr;
+  grid-template-rows: 1fr 18px;
+  align-items: center;
+  border: 3px solid #623213;
+  border-radius: 5px;
+  padding: 6px 28px;
+  background: #b55d20;
+  color: #fff4d7;
+  box-shadow: inset 0 0 0 3px #d68c3d, 7px 8px 0 rgba(64, 40, 23, 0.18);
+}
+.zy-start-scroll::before, .zy-start-scroll::after { position: absolute; top: 7px; bottom: 7px; width: 7px; border-radius: 4px; background: #e0a85b; content: ""; }
+.zy-start-scroll::before { left: 8px; }
+.zy-start-scroll::after { right: 8px; }
+.zy-start-scroll > span { grid-row: 1 / 3; font-size: 31px; }
+.zy-start-scroll strong { align-self: end; font-family: "Kaiti SC", "STKaiti", "KaiTi", serif; font-size: 25px; }
+.zy-start-scroll small { align-self: start; color: #f4cf86; font-size: 8px; }
+
+.zy-home-dock {
+  display: grid;
+  width: min(100%, 360px);
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  align-self: end;
+  justify-self: center;
+  margin-top: 22px;
+}
+.zy-home-dock button { display: grid; justify-items: center; gap: 5px; border: 0; background: transparent; color: #2c231c; }
+.zy-home-dock span { display: grid; width: 53px; height: 53px; place-items: center; border: 2px solid #443326; border-radius: 5px; background: #efe0ad; box-shadow: inset 0 0 0 3px #b9852c, 3px 4px 0 rgba(47, 33, 21, 0.18); font-family: "Kaiti SC", "STKaiti", "KaiTi", serif; font-size: 25px; font-weight: 900; }
+.zy-home-dock strong { font-size: 10px; text-shadow: 0 1px #f4e7c9; }
+.zy-version { position: absolute; right: 0; bottom: 2px; left: 0; color: rgba(65, 49, 36, 0.55); }
+
+.zy-match {
+  display: grid;
+  grid-template-rows: 1fr 52px 1fr;
+  place-items: stretch;
+  padding: 0;
+  background: #d8d6dc;
+}
+.zy-match-half { position: relative; display: grid; width: 100%; min-width: 0; align-content: center; justify-items: center; gap: 18px; padding: 24px; overflow: hidden; }
+.zy-match-half::before { position: absolute; inset: 0; opacity: 0.14; background-image: url("assets/paper-texture.jpg"); background-size: 600px; content: ""; }
+.zy-match-player-side { background: #adb5e0; }
+.zy-match-opponent-side { background: #d9a0ad; }
+.zy-match h1 { position: relative; margin: 0; color: #d93a35; font-size: clamp(37px, 10vw, 51px); font-weight: 1000; -webkit-text-stroke: 2px #111; text-shadow: 0 3px 0 #111; }
+.zy-match-loadout { position: relative; display: flex; justify-content: center; gap: 7px; }
+.zy-match-loadout span { display: grid; width: 45px; height: 45px; place-items: center; border: 3px solid #1f456c; border-radius: 7px; background: #5687bd; color: #fff0a5; font-family: "Kaiti SC", "STKaiti", "KaiTi", serif; font-size: 23px; font-weight: 900; box-shadow: inset 0 0 0 2px #7eabe0; }
+.zy-match-scroll { position: relative; display: grid; width: min(100%, 390px); min-height: 92px; grid-template-columns: 70px 1fr; align-items: center; gap: 15px; border: 3px solid #243b58; border-radius: 4px; padding: 13px 20px; background: #456c9f; color: #fff; box-shadow: 0 7px 0 rgba(39, 39, 48, 0.18); }
+.zy-match-opponent-side .zy-match-scroll { border-color: #70352e; background: #b64f48; }
+.zy-match-avatar { display: grid; width: 62px; height: 62px; place-items: center; border: 3px solid #27201b; border-radius: 3px; background: #e7e1d4; color: #26201b; font-size: 30px; }
+.zy-match-scroll strong { display: block; font-family: "Kaiti SC", "STKaiti", "KaiTi", serif; font-size: 25px; }
+.zy-match-scroll small { display: block; margin-top: 5px; font-size: 11px; }
+.zy-crossed-swords { z-index: 2; display: grid; width: 76px; height: 76px; place-self: center; place-items: center; border: 4px solid #3a3028; border-radius: 50%; background: #ede4d2; font-size: 40px; transform: rotate(-8deg); }
+.zy-match-enter { position: relative; width: min(100%, 260px); height: 54px; border: 3px solid #63352a; border-radius: 4px; background: #a44942; color: #fff2d9; font-family: "Kaiti SC", "STKaiti", "KaiTi", serif; font-size: 22px; font-weight: 900; }
+
+.zy-battle {
+  background-color: #aeb7a7;
+  background-image: linear-gradient(rgba(231, 230, 207, 0.84), rgba(191, 200, 183, 0.86)), url("assets/zhao-ink-landscape-v1.jpg");
+  background-position: center;
+  background-size: cover;
+}
+.zy-battle-hud {
+  min-height: calc(82px + env(safe-area-inset-top));
+  grid-template-columns: 38px 62px minmax(96px, 1fr) auto 38px;
+  align-items: center;
+  border-bottom: 3px solid #34312b;
+  padding: env(safe-area-inset-top) 7px 5px;
+  background: rgba(194, 203, 185, 0.94);
+}
+.zy-buns-counter { display: flex; align-items: center; gap: 4px; padding: 2px 7px 2px 3px; border-radius: 18px 4px 4px 18px; background: #211f1b; color: #ffd760; }
+.zy-buns-counter span { display: grid; width: 30px; height: 30px; place-items: center; border-radius: 50%; background: #f0e7d0; color: #8a5d27; font-size: 12px; }
+.zy-buns-counter b { font-size: 16px; font-variant-numeric: tabular-nums; }
+.zy-battle-title { text-align: center; }
+.zy-battle-title small { color: #ad3c2d; font-family: "Kaiti SC", "STKaiti", "KaiTi", serif; font-size: 16px; font-weight: 900; }
+.zy-battle-title strong { margin: 0; font-size: 25px; line-height: 1; }
+.zy-battle-title span { display: block; margin-top: 3px; color: #5d5142; font-size: 7px; }
+.zy-equipped-chips { display: flex; gap: 3px; }
+.zy-equipped-chips span { display: grid; width: 25px; height: 25px; place-items: center; border: 2px solid #69501f; border-radius: 50%; background: #d6ad38; font-family: "Kaiti SC", "STKaiti", "KaiTi", serif; font-size: 12px; font-weight: 900; }
+
+.zy-battle-main { grid-template-rows: minmax(150px, 1fr) 34px minmax(150px, 1fr); border-bottom: 3px solid #35322d; }
+.zy-field { position: relative; display: grid; min-height: 0; gap: 5px; padding: 6px 58px; }
+.zy-opponent-zone { grid-template-columns: minmax(0, 1fr); grid-template-rows: 22px minmax(0, 1fr); border-bottom: 0; background: rgba(214, 222, 207, 0.48); }
+.zy-player-zone { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) 22px; padding: 6px 58px; background: rgba(199, 206, 189, 0.5); }
+.zy-field-heading { display: flex; min-width: 0; align-items: center; justify-content: space-between; color: #3d3a32; font-size: 8px; }
+.zy-field-heading > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.zy-field-heading > b { display: flex; color: #c8313d; }
+.zy-field-heading > small { font-size: 8px; }
+.zy-board { grid-template-columns: repeat(5, minmax(0, 1fr)); grid-template-rows: repeat(3, minmax(0, 1fr)); gap: 3px; border: 3px solid #272825; padding: 3px; background: rgba(56, 62, 55, 0.42); }
+.zy-opponent-board { transform: rotate(180deg); }
+.zy-opponent-board .zy-unit { transform: rotate(180deg); }
+.zy-cell, .zy-reserve-cell { border: 2px solid rgba(77, 78, 68, 0.66); border-radius: 2px; background: #f2f0e5; box-shadow: inset 0 -2px 0 rgba(74, 69, 60, 0.1); }
+.zy-cell.is-locked { border-style: solid; background: rgba(73, 79, 72, 0.68); }
+.zy-cell.is-locked::after { content: ""; }
+.zy-unit { font-size: clamp(24px, 7.2vw, 35px); text-shadow: 1px 2px 0 rgba(83, 73, 57, 0.14); }
+.zy-unit[data-kind="general"] { border: 2px solid #b88227; background: rgba(255, 249, 224, 0.82); color: #9d661c; font-size: clamp(15px, 4.9vw, 24px); box-shadow: 0 0 6px rgba(230, 167, 49, 0.8); }
+.zy-level { top: 1px; right: 2px; font-size: 7px; }
+.zy-adou-marker { position: absolute; top: 50%; display: grid; width: 45px; justify-items: center; gap: 2px; color: #d2303c; transform: translateY(-50%); }
+.zy-adou-marker.is-left { left: 7px; }
+.zy-adou-marker.is-right { right: 7px; }
+.zy-adou-marker b { display: grid; width: 42px; height: 55px; place-items: center; border: 2px solid #2f302b; background: #e7e8df; color: #111; font-family: "Kaiti SC", "STKaiti", "KaiTi", serif; font-size: 36px; }
+.zy-adou-marker .zy-heart { font-size: 9px; }
+.zy-wave-zone { border-top: 2px solid #403d36; border-bottom: 2px solid #403d36; padding: 3px 44px; background: rgba(77, 78, 68, 0.8); }
+.zy-wave-row { color: #eee4cf; }
+.zy-wave-row strong { overflow: hidden; color: #fff4db; font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
+.zy-dual-bars { gap: 4px; }
+.zy-pressure { height: 5px; background: #302e29; }
+
+.zy-reserve-tray { display: grid; min-height: 63px; grid-template-columns: 43px minmax(0, 1fr); align-items: center; border-bottom: 2px solid #49483f; padding: 4px 8px; background: rgba(188, 199, 182, 0.96); }
+.zy-reserve-label { display: grid; width: 37px; height: 37px; place-items: center; border: 2px solid #41372e; border-radius: 50% 50% 4px 4px; background: #875335; color: #fff3d6; font-family: "Kaiti SC", "STKaiti", "KaiTi", serif; font-size: 20px; font-weight: 900; }
+.zy-reserve-row { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; padding: 0; }
+.zy-reserve-cell { min-height: 49px; background: rgba(226, 229, 213, 0.8); }
+.zy-reserve-cell .zy-unit { font-size: 26px; }
+
+.zy-command-bar { min-height: calc(81px + env(safe-area-inset-bottom)); grid-template-columns: repeat(2, 0.78fr) 1.5fr repeat(2, 0.78fr); gap: 4px; border-top: 0; padding: 5px 6px calc(5px + env(safe-area-inset-bottom)); background: #aab5a2; }
+.zy-command { border: 2px solid #24251f; border-radius: 5px; background: #30342e; color: #f3e7c5; box-shadow: inset 0 0 0 2px #5e675a; }
+.zy-command:last-child { border-right: 2px solid #24251f; }
+.zy-command-symbol { width: 31px; height: 31px; border-color: #ad872a; border-radius: 3px; background: #d4ae42; color: #29241c; }
+.zy-command small { color: #d6c9a8; }
+.zy-recruit-command { background: #b86244; box-shadow: inset 0 0 0 2px #d89772; }
+.zy-recruit-command strong { font-family: "Kaiti SC", "STKaiti", "KaiTi", serif; font-size: 22px; }
+.zy-recruit-command small { color: #fff0d0; font-size: 11px; }
+
+@media (min-width: 700px) {
+  .zy-game-shell { width: min(100vw, 520px); }
+}
+
+@media (max-height: 720px) {
+  .zy-home-emblem { height: 75px; transform: scale(0.76) rotate(-5deg); }
+  .zy-home-dock { margin-top: 10px; }
+  .zy-battle-hud { min-height: calc(68px + env(safe-area-inset-top)); }
+  .zy-battle-main { grid-template-rows: minmax(120px, 1fr) 30px minmax(120px, 1fr); }
+  .zy-reserve-tray { min-height: 55px; }
+  .zy-reserve-cell { min-height: 42px; }
+  .zy-command-bar { min-height: calc(70px + env(safe-area-inset-bottom)); }
+}

@@ -122,9 +122,9 @@ export class SaveService {
     this.storage?.setItem(this.key, JSON.stringify(value));
   }
 
-  claimResult(save, result, multiplier = 1) {
+  claimResult(save, result) {
     if (save.claimedSessions.includes(result.sessionId)) return { claimed: false, coins: 0, stars: 0 };
-    const reward = Math.round(result.baseCoins * multiplier);
+    const reward = result.baseCoins;
     const stars = result.victory ? GAMEPLAY_CONFIG.result.winStars : GAMEPLAY_CONFIG.result.loseStars;
     save.coins += reward;
     applyStars(save.rank, stars);
@@ -132,13 +132,6 @@ export class SaveService {
     save.claimedSessions = save.claimedSessions.slice(-50);
     this.save(save);
     return { claimed: true, coins: reward, stars };
-  }
-}
-
-export class FakeAdService {
-  async showRewarded() {
-    await new Promise((resolve) => setTimeout(resolve, 300));
-    return { rewarded: true };
   }
 }
 

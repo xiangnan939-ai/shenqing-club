@@ -7,7 +7,7 @@ import {
   SOLDIERS,
   WEAPONS,
 } from './game/config.mjs';
-import { BattleSession, FakeAdService, GameRules, SaveService, SeededRng } from './game/core.mjs';
+import { BattleSession, GameRules, SaveService, SeededRng } from './game/core.mjs';
 
 const game = document.querySelector('#zhaoGame');
 const shell = document.querySelector('#zyGameShell');
@@ -16,7 +16,6 @@ const openButton = document.querySelector('#openZhaoGame');
 
 if (game && shell && openButton) {
   const saveService = new SaveService(window.localStorage);
-  const adService = new FakeAdService();
   let meta = saveService.load();
   let screen = 'home';
   let previousScreen = 'home';
@@ -99,32 +98,33 @@ if (game && shell && openButton) {
     const stars = Array.from({ length: rank.starsToAdvance }, (_, index) => index < meta.rank.stars ? '◆' : '◇').join('');
     shell.innerHTML = `<main class="zy-screen zy-home" aria-label="游戏主页">
       <header class="zy-home-top">
-        <button class="zy-icon-button" data-action="exit-app" type="button" aria-label="退出游戏">${icons.back}</button>
-        <span></span>
+        <button class="zy-profile-seal" data-action="exit-app" type="button" aria-label="退出游戏"><span>赵</span></button>
         <div class="zy-meta-resources">
-          <div class="zy-resource-pill"><i>金</i><b>${meta.coins}</b></div>
-          <button class="zy-resource-pill energy" data-action="refill-energy" type="button" aria-label="补充体力"><i>力</i><b>${meta.energy}/${GAMEPLAY_CONFIG.meta.maxEnergy}</b></button>
-          <button class="zy-icon-button" data-action="settings" type="button" aria-label="设置">${icons.gear}</button>
+          <div class="zy-resource-pill"><i>刀</i><b>${meta.coins}</b></div>
+          <button class="zy-resource-pill energy" data-action="energy-info" type="button" aria-label="体力恢复说明"><i>力</i><b>${meta.energy}/${GAMEPLAY_CONFIG.meta.maxEnergy}</b></button>
         </div>
+        <button class="zy-icon-button zy-gear-button" data-action="settings" type="button" aria-label="设置">${icons.gear}</button>
       </header>
       <div class="zy-home-art">
         <section class="zy-title-mark">
-          <small>汉字合成策略塔防</small>
           <h2>赵云与阿斗</h2>
-          <p>一身是胆 · 长坂救主</p>
+          <p>文字布阵 · 合成救主</p>
         </section>
-        <section class="zy-rank-seal" aria-label="当前段位 ${rank.name}">
+        <section class="zy-rank-card" aria-label="当前段位 ${rank.name}">
+          <span class="zy-rank-avatar">云</span>
           <div><small>当前军职</small><strong>${rank.name}</strong><span class="zy-stars">${stars}</span></div>
         </section>
+        <div class="zy-home-emblem" aria-hidden="true"><span>赵</span><b>云</b><i>斗</i></div>
         <div class="zy-home-actions">
-          <button class="zy-primary-button" data-action="start-match" type="button">开始游戏 · 体力 ${GAMEPLAY_CONFIG.meta.battleEnergyCost}</button>
-          <div class="zy-secondary-actions">
-            <button class="zy-secondary-button" data-action="merchant" type="button"><span>商</span>神秘商人</button>
-            <button class="zy-secondary-button" data-action="weapons" type="button"><span>兵</span>武器背包</button>
-          </div>
+          <button class="zy-start-scroll" data-action="start-match" type="button"><span>⚔</span><strong>开始游戏</strong><small>体力 -${GAMEPLAY_CONFIG.meta.battleEnergyCost}</small></button>
         </div>
-      </div>
-      <footer class="zy-version">REFERENCE 2026.08 · 本地存档</footer>
+        <nav class="zy-home-dock" aria-label="游戏功能">
+          <button data-action="merchant" type="button"><span>商</span><strong>神秘商人</strong></button>
+          <button data-action="start-match" type="button"><span>战</span><strong>排位赛</strong></button>
+          <button data-action="weapons" type="button"><span>兵</span><strong>武器背包</strong></button>
+        </nav>
+        </div>
+      <footer class="zy-version">本地存档 · ${GAMEPLAY_CONFIG.version}</footer>
     </main>`;
   }
 
@@ -209,7 +209,7 @@ if (game && shell && openButton) {
   function beginMatch() {
     if (battle && !battle.over && screen === 'match') return;
     if (meta.energy < GAMEPLAY_CONFIG.meta.battleEnergyCost) {
-      showToast('体力不足，点击顶部体力可补充');
+      showToast('体力不足，每 10 分钟自动恢复 1 点');
       return;
     }
     meta.energy -= GAMEPLAY_CONFIG.meta.battleEnergyCost;
@@ -227,12 +227,29 @@ if (game && shell && openButton) {
   function renderMatch() {
     const rank = RANKS[meta.rank.tierIndex];
     shell.innerHTML = `<main class="zy-screen zy-match" aria-label="匹配完成">
-      <h1>匹配完成</h1>
-      <section class="zy-match-player"><div class="zy-match-avatar">赵</div><div><strong>常山赵子龙</strong><span>${rank.name} · 本局技能 ${meta.daily.activeLoadout.length + meta.daily.passiveLoadout.length}</span></div></section>
-      <div class="zy-vs">VS</div>
-      <section class="zy-match-player is-opponent"><div><strong>${battle.profile.name}</strong><span>${battle.profile.rank} · 胜率 ${battle.profile.winRate}</span></div><div class="zy-match-avatar">${battle.profile.avatar}</div></section>
-      <button class="zy-primary-button" data-action="skip-match" type="button">进入战场</button>
+      <section class="zy-match-half zy-match-player-side">
+        <h1>匹配完成</h1>
+        <div class="zy-match-loadout">${matchLoadoutHtml()}</div>
+        <article class="zy-match-scroll"><span class="zy-match-avatar">赵</span><div><strong>常山赵子龙</strong><small>${rank.name} · ${starsText(rank)}</small></div></article>
+      </section>
+      <div class="zy-crossed-swords" aria-hidden="true">⚔</div>
+      <section class="zy-match-half zy-match-opponent-side">
+        <article class="zy-match-scroll"><span class="zy-match-avatar">${battle.profile.avatar}</span><div><strong>${battle.profile.name}</strong><small>${battle.profile.rank} · 胜率 ${battle.profile.winRate}</small></div></article>
+        <button class="zy-match-enter" data-action="skip-match" type="button">进入虎牢关</button>
+      </section>
     </main>`;
+  }
+
+  function starsText(rank) {
+    return `${meta.rank.stars}/${rank.starsToAdvance} 星`;
+  }
+
+  function matchLoadoutHtml() {
+    const ids = [...meta.daily.activeLoadout, ...meta.daily.passiveLoadout].slice(0, 7);
+    return ids.map((id) => {
+      const item = ITEMS.find((entry) => entry.id === id);
+      return `<span title="${item?.name || ''}">${item?.name?.[0] || '空'}</span>`;
+    }).join('') || '<span>兵</span><span>铲</span><span>符</span>';
   }
 
   function startBattle() {
@@ -268,42 +285,46 @@ if (game && shell && openButton) {
     shell.innerHTML = `<main class="zy-screen zy-battle" aria-label="战斗">
       <header class="zy-battle-hud">
         <button class="zy-icon-button" data-action="pause" type="button" aria-label="暂停">${icons.pause}</button>
-        <div class="zy-battle-title"><small>${snapshot.map.name}</small><strong>${snapshot.enemy.boss ? `BOSS · ${snapshot.enemy.name}` : snapshot.enemy.name}</strong></div>
-        <span class="zy-wave-chip">第 ${snapshot.wave} 波 · ${Math.max(0, Math.ceil(snapshot.waveTime))}s</span>
+        <div class="zy-buns-counter"><span>馒</span><b>${Math.floor(snapshot.player.buns)}</b></div>
+        <div class="zy-battle-title"><small>${snapshot.map.name}</small><strong>第 ${snapshot.wave} 波</strong><span>${snapshot.enemy.boss ? `BOSS · ${snapshot.enemy.name}` : snapshot.enemy.name} · ${Math.max(0, Math.ceil(snapshot.waveTime))}s</span></div>
+        <div class="zy-equipped-chips">${battleChipsHtml(snapshot)}</div>
         <button class="zy-icon-button" data-action="deck" type="button" aria-label="牌库与图鉴">${icons.deck}</button>
       </header>
       <div class="zy-battle-main">
-        <section class="zy-opponent-zone" aria-label="对手战场">
-          ${sideMetaHtml(snapshot.opponent, snapshot.profile.name, true)}
-          <div class="zy-mini-board">${miniBoardHtml(snapshot.opponent)}</div>
+        <section class="zy-field zy-opponent-zone" aria-label="对手战场">
+          <div class="zy-field-heading"><span>${snapshot.profile.name}</span><b>${heartsHtml(snapshot.opponent.adouHp, snapshot.opponent.maxAdouHp)}</b><small>馒 ${Math.floor(snapshot.opponent.buns)}</small></div>
+          <div class="zy-board zy-opponent-board">${miniBoardHtml(snapshot.opponent)}</div>
+          <div class="zy-adou-marker is-left"><b>斗</b>${heartsHtml(snapshot.opponent.adouHp, snapshot.opponent.maxAdouHp)}</div>
         </section>
         <section class="zy-wave-zone" aria-label="波次压力">
-          <div class="zy-wave-row"><span>我方防线</span><strong>${snapshot.enemy.name}</strong><span>对手防线</span></div>
+          <div class="zy-wave-row"><span>对手</span><strong>${snapshot.enemy.char} · ${snapshot.lastEvent}</strong><span>我方</span></div>
           <div class="zy-dual-bars"><div class="zy-pressure"><span style="transform:scaleX(${pressureRatio(snapshot.player)})"></span></div><div class="zy-pressure is-ai"><span style="transform:scaleX(${pressureRatio(snapshot.opponent)})"></span></div></div>
-          <div class="zy-event-line">${snapshot.lastEvent}</div>
         </section>
-        <section class="zy-player-zone" aria-label="玩家战场">
-          <div class="zy-player-heading"><span>我方阵地 · 战力 <strong>${Math.round(GameRules.sidePower(battle.player))}</strong></span><span>${heartsHtml(snapshot.player.adouHp, snapshot.player.maxAdouHp)} 阿斗</span></div>
+        <section class="zy-field zy-player-zone" aria-label="玩家战场">
           <div class="zy-board">${boardHtml(snapshot.player)}</div>
-          <div class="zy-reserve-row"><div class="zy-reserve-label">备战<br>${snapshot.player.reserve.filter(Boolean).length}/5</div>${reserveHtml(snapshot.player)}</div>
+          <div class="zy-field-heading"><span>战力 ${Math.round(GameRules.sidePower(battle.player))}</span><b>${heartsHtml(snapshot.player.adouHp, snapshot.player.maxAdouHp)}</b><small>已开垦 ${snapshot.player.unlocked}/15</small></div>
+          <div class="zy-adou-marker is-right"><b>斗</b>${heartsHtml(snapshot.player.adouHp, snapshot.player.maxAdouHp)}</div>
         </section>
       </div>
+      <section class="zy-reserve-tray" aria-label="备战席"><span class="zy-reserve-label">营</span><div class="zy-reserve-row">${reserveHtml(snapshot.player)}</div></section>
       <footer class="zy-command-bar" aria-label="战斗操作">
-        <button class="zy-command" data-action="recruit" type="button" ${canRecruit(snapshot.player) ? '' : 'disabled'}><span class="zy-command-symbol">兵</span><strong>征兵</strong><small>馒 ${GameRules.currentRecruitCost(snapshot.player)} · 现有 ${Math.floor(snapshot.player.buns)}</small></button>
-        <button class="zy-command" data-action="open-land" type="button" ${canOpenLand(snapshot.player) ? '' : 'disabled'}><span class="zy-command-symbol">铲</span><strong>扩地</strong><small>馒 ${GameRules.currentLandCost(snapshot.player)}</small></button>
-        <button class="zy-command" data-action="use-item-menu" type="button" ${snapshot.player.activeItems.every((id) => snapshot.player.usedItems.includes(id)) ? 'disabled' : ''}><span class="zy-command-symbol">技</span><strong>技能</strong><small>${snapshot.player.activeItems.length} 个</small></button>
-        <button class="zy-command" data-action="recycle" type="button" ${selected ? '' : 'disabled'}><span class="zy-command-symbol">炉</span><strong>回收</strong><small>选中单位</small></button>
+        <button class="zy-command" data-action="open-land" type="button" ${canOpenLand(snapshot.player) ? '' : 'disabled'}><span class="zy-command-symbol">铲</span><strong>扩地</strong><small>${GameRules.currentLandCost(snapshot.player)}</small></button>
+        <button class="zy-command" data-action="recycle" type="button" ${selected ? '' : 'disabled'}><span class="zy-command-symbol">炉</span><strong>回收</strong><small>选中</small></button>
+        <button class="zy-command zy-recruit-command" data-action="recruit" type="button" ${canRecruit(snapshot.player) ? '' : 'disabled'}><strong>征兵</strong><small>馒 ${GameRules.currentRecruitCost(snapshot.player)}</small></button>
+        <button class="zy-command" data-action="use-item-menu" type="button" ${snapshot.player.activeItems.every((id) => snapshot.player.usedItems.includes(id)) ? 'disabled' : ''}><span class="zy-command-symbol">符</span><strong>神兵</strong><small>${snapshot.player.activeItems.length} 个</small></button>
+        <button class="zy-command" data-action="deck" type="button"><span class="zy-command-symbol">牌</span><strong>招贤</strong><small>图鉴</small></button>
       </footer>
       ${overlayHtml(snapshot)}
     </main>`;
   }
 
-  function sideMetaHtml(side, name, opponent = false) {
-    return `<div class="zy-side-meta"><span class="zy-adou">斗</span><div class="zy-hearts">${heartsHtml(side.adouHp, side.maxAdouHp)}</div><small>${name}<br>馒 ${Math.floor(side.buns)}</small></div>`;
+  function battleChipsHtml(snapshot) {
+    const ids = [...snapshot.player.activeItems, ...snapshot.player.passiveItems].slice(0, 3);
+    return ids.map((id) => `<span>${ITEMS.find((item) => item.id === id)?.name?.[0] || '符'}</span>`).join('');
   }
 
   function miniBoardHtml(side) {
-    return side.board.slice(0, 10).map((unit) => `<div class="zy-mini-cell">${unit ? `${unit.char}<small>${unit.level}</small>` : ''}</div>`).join('');
+    return side.board.map((unit, index) => `<div class="zy-cell zy-mini-cell${index >= side.unlocked ? ' is-locked' : ''}">${index < side.unlocked ? unitHtml(unit) : ''}</div>`).join('');
   }
 
   function boardHtml(side) {
@@ -391,7 +412,6 @@ if (game && shell && openButton) {
         <p>${battle.map.name} · ${battle.profile.name}</p>
         <div class="zy-result-stats"><span>抵御波次<b>${result.clearedWaves}</b></span><span>最高战力<b>${result.maxPower}</b></span><span>基础金币<b>${result.baseCoins}</b></span></div>
         <button class="zy-primary-button" data-action="claim-result" type="button" ${alreadyClaimed ? 'disabled' : ''}>${alreadyClaimed ? '奖励已领取' : `领取奖励 · 金币 ${result.baseCoins}`}</button>
-        <button class="zy-secondary-button" style="width:100%;margin-top:9px" data-action="double-result" type="button" ${alreadyClaimed ? 'disabled' : ''}>观看模拟广告 · 双倍金币</button>
         <button class="zy-text-button" data-action="result-home" type="button">返回主页</button>
       </section>
     </main>`;
@@ -452,18 +472,6 @@ if (game && shell && openButton) {
     renderWeapons();
   }
 
-  async function refillEnergy() {
-    if (meta.energy >= GAMEPLAY_CONFIG.meta.maxEnergy) return showToast('体力已经满了');
-    showToast('正在播放模拟奖励广告');
-    const result = await adService.showRewarded('energy_refill');
-    if (result.rewarded) {
-      meta.energy = Math.min(GAMEPLAY_CONFIG.meta.maxEnergy, meta.energy + 5);
-      saveService.save(meta);
-      renderHome();
-      showToast('体力 +5');
-    }
-  }
-
   function handleCell(location, index) {
     if (pendingItem) {
       const result = battle.executeCommand('player', { type: 'UseItem', itemId: pendingItem, target: { location, index } });
@@ -513,16 +521,10 @@ if (game && shell && openButton) {
     startBattleClock();
   }
 
-  async function claimResult(double = false) {
+  function claimResult() {
     if (resultClaiming || meta.claimedSessions.includes(battle.result.sessionId)) return;
     resultClaiming = true;
-    let multiplier = 1;
-    if (double) {
-      battle.setPaused(true);
-      const ad = await adService.showRewarded('result_double_coin');
-      if (ad.rewarded) multiplier = 2;
-    }
-    const claim = saveService.claimResult(meta, battle.result, multiplier);
+    const claim = saveService.claimResult(meta, battle.result);
     resultClaiming = false;
     if (claim.claimed) showToast(`金币 +${claim.coins} · 星数 ${claim.stars >= 0 ? '+' : ''}${claim.stars}`);
     renderResult();
@@ -537,7 +539,7 @@ if (game && shell && openButton) {
     else if (action === 'settings') go('settings');
     else if (action === 'merchant') go('merchant');
     else if (action === 'weapons') go('weapons');
-    else if (action === 'refill-energy') refillEnergy();
+    else if (action === 'energy-info') showToast('体力每 10 分钟自动恢复 1 点');
     else if (action === 'start-match') beginMatch();
     else if (action === 'merchant-tab') { merchantTab = button.dataset.tab; renderMerchant(); }
     else if (action === 'shop-item') buyOrEquipItem(button.dataset.id);
@@ -579,8 +581,7 @@ if (game && shell && openButton) {
     }
     else if (action === 'use-item-menu') { battle.setPaused(true); overlay = 'items'; renderBattle(); }
     else if (action === 'use-item') useItem(button.dataset.id);
-    else if (action === 'claim-result') claimResult(false);
-    else if (action === 'double-result') claimResult(true);
+    else if (action === 'claim-result') claimResult();
     else if (action === 'result-home') go('home');
   });
 
