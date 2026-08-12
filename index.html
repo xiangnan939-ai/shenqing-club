@@ -6,15 +6,51 @@
     <meta name="description" content="深情.club">
     <meta property="og:title" content="深情.club">
     <meta property="og:description" content="深情.club">
-    <meta property="og:image" content="/assets/hero.png">
+    <meta property="og:image" content="assets/hero.png">
     <meta property="og:type" content="website">
     <title>深情.club</title>
-    <link rel="preload" href="/assets/hero.png" as="image">
-    <link rel="stylesheet" href="/styles.css">
+    <link rel="preload" href="assets/hero.png" as="image">
+    <link rel="stylesheet" href="styles.css">
+    <script src="app.js" defer></script>
   </head>
-  <body>
-    <main aria-label="深情.club">
-      <img src="/assets/hero.png" alt="暮色海岸与山路" width="1672" height="941">
+  <body class="auth-loading">
+    <section class="auth-view" aria-label="登录注册">
+      <div class="auth-shell">
+        <div class="auth-brand" aria-label="深情.club">
+          <span>深情.club</span>
+          <strong>在夜色抵达前，先确认来处。</strong>
+        </div>
+
+        <div class="auth-panel">
+          <div class="auth-tabs" role="tablist" aria-label="账号">
+            <button class="auth-tab is-active" type="button" role="tab" aria-selected="true" data-auth-mode="login">登录</button>
+            <button class="auth-tab" type="button" role="tab" aria-selected="false" data-auth-mode="register">注册</button>
+          </div>
+
+          <form class="auth-form" id="authForm" autocomplete="on">
+            <label for="username">账号</label>
+            <input id="username" name="username" type="text" autocomplete="username" required minlength="2" maxlength="24" placeholder="请输入账号">
+
+            <label for="password">密码</label>
+            <input id="password" name="password" type="password" autocomplete="current-password" required minlength="6" placeholder="请输入密码">
+
+            <label class="register-only is-hidden" for="confirmPassword">确认密码</label>
+            <input class="register-only is-hidden" id="confirmPassword" name="confirmPassword" type="password" autocomplete="new-password" minlength="6" placeholder="请再次输入密码">
+
+            <p class="auth-message" id="authMessage" aria-live="polite"></p>
+
+            <button class="auth-submit" type="submit">登录</button>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <main class="app-view" aria-label="深情.club">
+      <div class="app-bar">
+        <span id="currentUser"></span>
+        <button type="button" id="logoutButton">退出</button>
+      </div>
+      <img src="assets/hero.png" alt="暮色海岸与山路" width="1672" height="941">
     </main>
   </body>
 </html>
