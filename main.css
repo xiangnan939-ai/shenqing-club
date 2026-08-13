@@ -429,33 +429,6 @@ textarea {
   background: #5f8b64;
 }
 
-.message-button {
-  display: grid;
-  width: 40px;
-  height: 40px;
-  place-items: center;
-  border: 0;
-  border-radius: 50%;
-  background: transparent;
-  transition: background-color 160ms ease, color 160ms ease;
-}
-
-.message-button:hover,
-.message-button:focus-visible {
-  background: var(--accent-soft);
-  color: #b53e0a;
-}
-
-.message-button svg {
-  width: 19px;
-  height: 19px;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 1.7;
-}
-
 .app-toast {
   position: fixed;
   z-index: 10;
