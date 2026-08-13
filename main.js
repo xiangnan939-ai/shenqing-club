@@ -132,7 +132,6 @@ function loadImage(source) {
 
 async function cropAvatarFile(file) {
   if (!file || !file.type.startsWith('image/')) throw new Error('请选择图片文件。');
-  if (file.size > 8 * 1024 * 1024) throw new Error('图片不能超过 8MB。');
 
   const source = await readImageFile(file);
   const image = await loadImage(source);
@@ -144,16 +143,28 @@ async function cropAvatarFile(file) {
   context.imageSmoothingEnabled = true;
   context.imageSmoothingQuality = 'high';
 
-  for (const outputSize of [320, 288, 256, 224, 192, 160]) {
+  const attempts = [];
+  for (const outputSize of [320, 288, 256, 224, 192, 160, 128]) {
+    attempts.push({ outputSize, type: 'image/png' });
+    for (const quality of [0.92, 0.82, 0.72, 0.62]) {
+      attempts.push({ outputSize, type: 'image/webp', quality });
+    }
+    for (const quality of [0.9, 0.78, 0.66]) {
+      attempts.push({ outputSize, type: 'image/jpeg', quality });
+    }
+  }
+
+  for (const attempt of attempts) {
+    const { outputSize, type, quality } = attempt;
     canvas.width = outputSize;
     canvas.height = outputSize;
     context.clearRect(0, 0, outputSize, outputSize);
     context.drawImage(image, sourceX, sourceY, size, size, 0, 0, outputSize, outputSize);
-    const dataUrl = canvas.toDataURL('image/png');
+    const dataUrl = canvas.toDataURL(type, quality);
     if (dataUrl.length <= MAX_AVATAR_DATA_LENGTH) return dataUrl;
   }
 
-  throw new Error('头像图片过大，请换一张更简单的图片。');
+  throw new Error('头像自动压缩失败，请换一张图片。');
 }
 
 async function apiRequest(endpoint, payload, method = 'POST') {
@@ -302,7 +313,7 @@ avatarUpload.addEventListener('change', async () => {
     renderAvatar(editAvatarPreview, {
       avatarImage: selectedAvatarImage,
     });
-    setMessage(profileEditMessage, '头像已裁剪为 1:1，保存资料后生效。', 'success');
+    setMessage(profileEditMessage, '头像已自动裁剪压缩，保存资料后生效。', 'success');
   } catch (error) {
     selectedAvatarImage = currentProfile?.avatarImage || '';
     avatarUpload.value = '';
