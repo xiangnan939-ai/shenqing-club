@@ -8,9 +8,9 @@
     <meta property="og:title" content="深情俱乐部">
     <meta property="og:type" content="website">
     <title>深情俱乐部</title>
-    <link rel="stylesheet" href="main.css?v=5">
+    <link rel="stylesheet" href="main.css?v=6">
     <link rel="stylesheet" href="zhao-game.css?v=2">
-    <script src="main.js?v=5" defer></script>
+    <script src="main.js?v=6" defer></script>
     <script src="zhao-game.js?v=2" type="module"></script>
   </head>
   <body class="session-loading">
@@ -91,26 +91,41 @@
       </section>
 
       <section class="app-view" id="profileView" data-view="profile" aria-labelledby="profileTitle" hidden>
-        <header class="view-header profile-title-row">
-          <p>ACCOUNT</p>
-          <h1 id="profileTitle">我的</h1>
+        <header class="view-header">
+          <div>
+            <p>ACCOUNT</p>
+            <h1 id="profileTitle">我的</h1>
+          </div>
+          <button class="header-icon-button" id="openSettings" type="button" aria-label="打开设置" title="设置">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 15.5A3.5 3.5 0 1 0 12 8a3.5 3.5 0 0 0 0 7.5z"></path><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.65 1.65 0 0 0 15 19.4a1.65 1.65 0 0 0-1 .6 1.65 1.65 0 0 0-.4 1.08V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 8.6 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-.6-1 1.65 1.65 0 0 0-1.08-.4H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 8.6a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-.6A1.65 1.65 0 0 0 10.4 3V3a2 2 0 1 1 4 0v.09A1.65 1.65 0 0 0 15 4.6a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9c.24.36.6.6 1 .6h.1a2 2 0 1 1 0 4h-.1a1.65 1.65 0 0 0-1 .6z"></path></svg>
+          </button>
         </header>
 
         <div class="profile-content">
           <section class="profile-identity" aria-label="账号资料">
             <div class="profile-avatar" id="profileAvatar" aria-hidden="true">深</div>
-            <div>
-              <h2 id="profileUsername">加载中</h2>
-              <p>深情俱乐部成员</p>
+            <div class="profile-identity-main">
+              <span class="member-title" id="memberTitle">中国第-深情</span>
+              <h2 id="profileNickname">加载中</h2>
+              <p id="profileSignature">这个人很深情，还没留下签名。</p>
             </div>
+            <span class="member-badge" id="memberLevel">V1</span>
           </section>
 
           <section class="profile-section" aria-labelledby="accountHeading">
             <h2 id="accountHeading">账号</h2>
             <dl class="account-details">
               <div>
-                <dt>用户名</dt>
+                <dt>账号</dt>
                 <dd id="accountUsername">-</dd>
+              </div>
+              <div>
+                <dt>绑定邮箱</dt>
+                <dd id="accountEmail">-</dd>
+              </div>
+              <div>
+                <dt>在线时长</dt>
+                <dd id="activeTime">0 分钟</dd>
               </div>
               <div>
                 <dt>账号状态</dt>
@@ -121,11 +136,11 @@
 
           <section class="profile-section" aria-labelledby="settingsHeading">
             <h2 id="settingsHeading">设置</h2>
-            <button class="settings-row" type="button" id="logoutButton">
+            <button class="settings-row" type="button" id="openSettingsRow">
               <span class="settings-icon">
-                <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M10 17l5-5-5-5"></path><path d="M15 12H3"></path><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path></svg>
+                <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 15.5A3.5 3.5 0 1 0 12 8a3.5 3.5 0 0 0 0 7.5z"></path><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.65 1.65 0 0 0 15 19.4a1.65 1.65 0 0 0-1 .6 1.65 1.65 0 0 0-.4 1.08V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 8.6 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-.6-1 1.65 1.65 0 0 0-1.08-.4H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 8.6a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-.6A1.65 1.65 0 0 0 10.4 3V3a2 2 0 1 1 4 0v.09A1.65 1.65 0 0 0 15 4.6a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9c.24.36.6.6 1 .6h.1a2 2 0 1 1 0 4h-.1a1.65 1.65 0 0 0-1 .6z"></path></svg>
               </span>
-              <span>退出登录</span>
+              <span>账号与隐私</span>
               <svg class="row-chevron" aria-hidden="true" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"></path></svg>
             </button>
           </section>
@@ -151,6 +166,108 @@
 
       <p class="app-toast" id="appToast" role="status" aria-live="polite"></p>
     </main>
+
+    <div class="settings-drawer" id="settingsDrawer" role="dialog" aria-modal="true" aria-labelledby="settingsDrawerTitle" hidden>
+      <button class="drawer-backdrop" type="button" aria-label="关闭设置" data-close-settings></button>
+      <section class="drawer-panel">
+        <header class="drawer-header">
+          <div>
+            <p>SETTINGS</p>
+            <h2 id="settingsDrawerTitle">设置</h2>
+          </div>
+          <button class="drawer-close" type="button" aria-label="关闭设置" data-close-settings>&times;</button>
+        </header>
+
+        <nav class="settings-tabs" aria-label="设置分类">
+          <button class="settings-tab is-active" type="button" data-settings-tab="profileEdit">资料</button>
+          <button class="settings-tab" type="button" data-settings-tab="feedbackPanel">反馈</button>
+          <button class="settings-tab" type="button" data-settings-tab="securityPanel">安全</button>
+        </nav>
+
+        <div class="settings-panels">
+          <form class="settings-panel is-active" id="profileEdit" data-settings-panel="profileEdit">
+            <label>
+              <span>头像字</span>
+              <input id="editAvatarText" name="avatarText" maxlength="4" placeholder="深">
+            </label>
+            <label>
+              <span>昵称</span>
+              <input id="editNickname" name="nickname" maxlength="24" required>
+            </label>
+            <label>
+              <span>个性签名</span>
+              <textarea id="editSignature" name="signature" maxlength="80" rows="3"></textarea>
+            </label>
+            <p class="settings-message" id="profileEditMessage" aria-live="polite"></p>
+            <button class="primary-action" type="submit">保存资料</button>
+          </form>
+
+          <form class="settings-panel" id="feedbackPanel" data-settings-panel="feedbackPanel" hidden>
+            <label>
+              <span>联系方式</span>
+              <input id="feedbackContact" name="contact" maxlength="120" placeholder="邮箱或微信，可不填">
+            </label>
+            <label>
+              <span>意见反馈</span>
+              <textarea id="feedbackMessage" name="message" maxlength="1000" rows="5" required placeholder="哪里不好用、想加什么，都可以写在这里。"></textarea>
+            </label>
+            <p class="settings-message" id="feedbackStatus" aria-live="polite"></p>
+            <button class="primary-action" type="submit">发送反馈</button>
+          </form>
+
+          <div class="settings-panel security-panel" id="securityPanel" data-settings-panel="securityPanel" hidden>
+            <form id="passwordForm">
+              <h3>修改密码</h3>
+              <label>
+                <span>当前密码</span>
+                <input name="currentPassword" type="password" autocomplete="current-password" required>
+              </label>
+              <label>
+                <span>新密码</span>
+                <input name="newPassword" type="password" autocomplete="new-password" minlength="8" maxlength="128" required>
+              </label>
+              <label>
+                <span>确认新密码</span>
+                <input name="confirmPassword" type="password" autocomplete="new-password" minlength="8" maxlength="128" required>
+              </label>
+              <p class="settings-message" id="passwordStatus" aria-live="polite"></p>
+              <button class="primary-action" type="submit">更新密码</button>
+            </form>
+
+            <form id="emailForm">
+              <h3>修改邮箱</h3>
+              <label>
+                <span>新邮箱</span>
+                <input name="email" type="email" autocomplete="email" required>
+              </label>
+              <label>
+                <span>当前密码</span>
+                <input name="currentPassword" type="password" autocomplete="current-password" required>
+              </label>
+              <p class="settings-message" id="emailStatus" aria-live="polite"></p>
+              <button class="primary-action" type="submit">更新邮箱</button>
+            </form>
+
+            <div class="danger-zone">
+              <button class="secondary-action" type="button" id="logoutButton">退出登录</button>
+              <form id="deleteAccountForm">
+                <h3>注销账号</h3>
+                <label>
+                  <span>当前密码</span>
+                  <input name="password" type="password" autocomplete="current-password" required>
+                </label>
+                <label>
+                  <span>确认文字</span>
+                  <input name="confirmText" required placeholder="输入：注销账号">
+                </label>
+                <p class="settings-message" id="deleteStatus" aria-live="polite"></p>
+                <button class="danger-action" type="submit">永久注销账号</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
 
     <section class="zhao-game" id="zhaoGame" aria-label="赵云与阿斗游戏" hidden>
       <div class="zy-game-shell" id="zyGameShell"></div>

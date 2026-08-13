@@ -24,6 +24,9 @@ export async function onRequestPost(context) {
   }
 
   const cookie = await createSessionCookie(user.username, context.env.SESSION_SECRET);
+  await context.env.DB.prepare('UPDATE users SET last_seen_at = CURRENT_TIMESTAMP WHERE username = ?')
+    .bind(user.username)
+    .run();
   return json({ ok: true, username: user.username }, 200, { 'Set-Cookie': cookie });
 }
 
