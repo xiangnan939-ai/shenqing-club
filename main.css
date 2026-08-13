@@ -505,37 +505,6 @@ textarea {
   white-space: nowrap;
 }
 
-.settings-row {
-  display: grid;
-  width: 100%;
-  min-height: 58px;
-  grid-template-columns: 32px 1fr 20px;
-  align-items: center;
-  gap: 12px;
-  border: 0;
-  border-top: 1px solid var(--line);
-  border-bottom: 1px solid var(--line);
-  padding: 0;
-  background: transparent;
-  color: #9b3c20;
-  text-align: left;
-}
-
-.settings-row:hover,
-.settings-row:focus-visible {
-  background: rgba(233, 87, 22, 0.06);
-}
-
-.settings-icon {
-  display: grid;
-  width: 30px;
-  height: 30px;
-  place-items: center;
-  border-radius: 50%;
-  background: var(--accent-soft);
-}
-
-.settings-icon svg,
 .row-chevron {
   width: 17px;
   height: 17px;
