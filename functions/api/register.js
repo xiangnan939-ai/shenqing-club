@@ -91,9 +91,9 @@ export async function onRequestPost(context) {
     const statements = await context.env.DB.batch([
       context.env.DB.prepare(
         `INSERT INTO users
-         (username, email, email_verified_at, password_hash, password_salt, nickname, avatar_text, last_seen_at)
-         VALUES (?, ?, CURRENT_TIMESTAMP, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
-      ).bind(username, email, passwordData.hash, passwordData.salt, username, Array.from(username)[0] || '深'),
+         (username, email, email_verified_at, password_hash, password_salt, nickname, last_seen_at)
+         VALUES (?, ?, CURRENT_TIMESTAMP, ?, ?, ?, CURRENT_TIMESTAMP)`,
+      ).bind(username, email, passwordData.hash, passwordData.salt, username),
       context.env.DB.prepare(
         'UPDATE email_verification_requests SET consumed_at = CURRENT_TIMESTAMP WHERE id = ?',
       ).bind(emailRequest.id),

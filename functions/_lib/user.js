@@ -26,9 +26,12 @@ export function normalizeSignature(value) {
   return cleanProfileText(value, 80);
 }
 
-export function normalizeAvatarText(value) {
-  const [first = ''] = Array.from(cleanProfileText(value, 4));
-  return first;
+export function normalizeAvatarImage(value) {
+  const text = String(value || '').trim();
+  if (!text) return '';
+  if (text.length > 220000) return '';
+  if (!/^data:image\/(?:png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/u.test(text)) return '';
+  return text;
 }
 
 export function memberLevel(activeSeconds = 0) {
@@ -42,7 +45,6 @@ export function memberLevel(activeSeconds = 0) {
 
 export function serializeUser(user) {
   const nickname = user.nickname || user.username;
-  const avatarText = user.avatar_text || Array.from(nickname)[0] || '深';
   const activeSeconds = Math.max(0, Number(user.active_seconds) || 0);
   return {
     id: user.id,
@@ -50,7 +52,7 @@ export function serializeUser(user) {
     email: user.email || '',
     nickname,
     signature: user.signature || '这个人很深情，还没留下签名。',
-    avatarText,
+    avatarImage: user.avatar_image || '',
     memberLevel: `V${memberLevel(activeSeconds)}`,
     activeSeconds,
     activeMinutes: Math.floor(activeSeconds / 60),
@@ -63,7 +65,7 @@ export async function requireUser(context) {
   if (!session) return { response: json({ authenticated: false }, 401) };
 
   const user = await context.env.DB.prepare(
-    `SELECT id, username, email, nickname, signature, avatar_text,
+    `SELECT id, username, email, nickname, signature, avatar_image,
             active_seconds, last_seen_at, created_at
      FROM users
      WHERE username = ? LIMIT 1`,

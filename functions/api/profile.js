@@ -1,6 +1,6 @@
 import { json } from '../_lib/auth.js';
 import {
-  normalizeAvatarText,
+  normalizeAvatarImage,
   normalizeNickname,
   normalizeSignature,
   requireUser,
@@ -26,13 +26,13 @@ export async function onRequestPut(context) {
 
   const nickname = normalizeNickname(input.nickname) || user.username;
   const signature = normalizeSignature(input.signature) || '这个人很深情，还没留下签名。';
-  const avatarText = normalizeAvatarText(input.avatarText || nickname) || '深';
+  const avatarImage = normalizeAvatarImage(input.avatarImage);
 
   await context.env.DB.prepare(
     `UPDATE users
-     SET nickname = ?, signature = ?, avatar_text = ?
+     SET nickname = ?, signature = ?, avatar_image = ?
      WHERE username = ?`,
-  ).bind(nickname, signature, avatarText, user.username).run();
+  ).bind(nickname, signature, avatarImage || null, user.username).run();
 
   return json({
     ok: true,
@@ -40,7 +40,7 @@ export async function onRequestPut(context) {
       ...user,
       nickname,
       signature,
-      avatar_text: avatarText,
+      avatar_image: avatarImage,
     }),
   });
 }

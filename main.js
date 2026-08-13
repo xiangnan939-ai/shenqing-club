@@ -21,7 +21,8 @@ const settingsDetailButtons = document.querySelectorAll('[data-settings-detail]'
 const settingsDetailPanels = document.querySelectorAll('[data-settings-detail-panel]');
 const profileEdit = document.querySelector('#profileEdit');
 const profileEditMessage = document.querySelector('#profileEditMessage');
-const editAvatarText = document.querySelector('#editAvatarText');
+const editAvatarPreview = document.querySelector('#editAvatarPreview');
+const avatarUpload = document.querySelector('#avatarUpload');
 const editNickname = document.querySelector('#editNickname');
 const editSignature = document.querySelector('#editSignature');
 const feedbackPanel = document.querySelector('#feedbackPanel');
@@ -38,6 +39,7 @@ let currentProfile = null;
 let activityTimer = null;
 let previousMainView = 'profile';
 let activeSettingsDetail = '';
+let selectedAvatarImage = '';
 
 const settingsDetailTitles = {
   profileDetail: '资料修改',
@@ -86,6 +88,12 @@ function formatActiveTime(minutes) {
   return dayHours ? `${days} 天 ${dayHours} 小时` : `${days} 天`;
 }
 
+function renderAvatar(element, profile) {
+  element.textContent = '';
+  element.style.backgroundImage = profile.avatarImage ? `url("${profile.avatarImage}")` : '';
+  element.classList.toggle('has-image', Boolean(profile.avatarImage));
+}
+
 function renderProfile(profile) {
   currentProfile = profile;
   profileNickname.textContent = profile.nickname || profile.username;
@@ -94,11 +102,51 @@ function renderProfile(profile) {
   accountUsername.textContent = profile.username || '-';
   accountEmail.textContent = profile.email || '未绑定';
   activeTime.textContent = formatActiveTime(profile.activeMinutes);
-  profileAvatar.textContent = profile.avatarText || '深';
-  editAvatarText.value = profile.avatarText || '';
+  renderAvatar(profileAvatar, profile);
+  renderAvatar(editAvatarPreview, profile);
+  selectedAvatarImage = profile.avatarImage || '';
+  avatarUpload.value = '';
   editNickname.value = profile.nickname || profile.username || '';
   editSignature.value = profile.signature || '';
   emailForm.elements.email.value = profile.email || '';
+}
+
+function readImageFile(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.addEventListener('load', () => resolve(String(reader.result || '')));
+    reader.addEventListener('error', () => reject(new Error('图片读取失败，请重新选择。')));
+    reader.readAsDataURL(file);
+  });
+}
+
+function loadImage(source) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.addEventListener('load', () => resolve(image));
+    image.addEventListener('error', () => reject(new Error('图片加载失败，请换一张图片。')));
+    image.src = source;
+  });
+}
+
+async function cropAvatarFile(file) {
+  if (!file || !file.type.startsWith('image/')) throw new Error('请选择图片文件。');
+  if (file.size > 8 * 1024 * 1024) throw new Error('图片不能超过 8MB。');
+
+  const source = await readImageFile(file);
+  const image = await loadImage(source);
+  const size = Math.min(image.naturalWidth, image.naturalHeight);
+  const sourceX = Math.floor((image.naturalWidth - size) / 2);
+  const sourceY = Math.floor((image.naturalHeight - size) / 2);
+  const canvas = document.createElement('canvas');
+  const outputSize = 320;
+  canvas.width = outputSize;
+  canvas.height = outputSize;
+  const context = canvas.getContext('2d');
+  context.imageSmoothingEnabled = true;
+  context.imageSmoothingQuality = 'high';
+  context.drawImage(image, sourceX, sourceY, size, size, 0, 0, outputSize, outputSize);
+  return canvas.toDataURL('image/png');
 }
 
 async function apiRequest(endpoint, payload, method = 'POST') {
@@ -225,7 +273,7 @@ profileEdit.addEventListener('submit', async (event) => {
   submit.disabled = true;
   try {
     const result = await apiRequest('/api/profile', {
-      avatarText: editAvatarText.value,
+      avatarImage: selectedAvatarImage,
       nickname: editNickname.value,
       signature: editSignature.value,
     }, 'PUT');
@@ -235,6 +283,23 @@ profileEdit.addEventListener('submit', async (event) => {
     setMessage(profileEditMessage, error.message, 'error');
   } finally {
     submit.disabled = false;
+  }
+});
+
+avatarUpload.addEventListener('change', async () => {
+  setMessage(profileEditMessage, '');
+  const [file] = avatarUpload.files || [];
+  if (!file) return;
+  try {
+    selectedAvatarImage = await cropAvatarFile(file);
+    renderAvatar(editAvatarPreview, {
+      avatarImage: selectedAvatarImage,
+    });
+    setMessage(profileEditMessage, '头像已裁剪为 1:1，保存资料后生效。', 'success');
+  } catch (error) {
+    selectedAvatarImage = currentProfile?.avatarImage || '';
+    avatarUpload.value = '';
+    setMessage(profileEditMessage, error.message, 'error');
   }
 });
 

@@ -17,12 +17,12 @@ test('serialized user exposes profile defaults', () => {
     email: 'test@example.com',
     nickname: null,
     signature: '',
-    avatar_text: null,
+    avatar_image: '',
     active_seconds: 0,
     created_at: '2026-08-13T00:00:00.000Z',
   });
 
   assert.equal(profile.memberLevel, 'V1');
   assert.equal(profile.nickname, 'shenqing');
-  assert.equal(profile.avatarText, 's');
+  assert.equal(profile.avatarImage, '');
 });

@@ -8,9 +8,9 @@
     <meta property="og:title" content="深情俱乐部">
     <meta property="og:type" content="website">
     <title>深情俱乐部</title>
-    <link rel="stylesheet" href="main.css?v=8">
+    <link rel="stylesheet" href="main.css?v=9">
     <link rel="stylesheet" href="zhao-game.css?v=2">
-    <script src="main.js?v=8" defer></script>
+    <script src="main.js?v=9" defer></script>
     <script src="zhao-game.js?v=2" type="module"></script>
   </head>
   <body class="session-loading">
@@ -103,7 +103,7 @@
 
         <div class="profile-content">
           <section class="profile-identity" aria-label="账号资料">
-            <div class="profile-avatar" id="profileAvatar" aria-hidden="true">深</div>
+            <div class="profile-avatar" id="profileAvatar" aria-hidden="true"></div>
             <div class="profile-identity-main">
               <h2 id="profileNickname">加载中</h2>
               <p id="profileSignature">这个人很深情，还没留下签名。</p>
@@ -167,11 +167,6 @@
               <span>资料修改</span>
               <svg class="row-chevron" aria-hidden="true" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"></path></svg>
             </button>
-            <button class="settings-menu-row" type="button" data-settings-detail="feedbackDetail">
-              <span class="settings-menu-icon">馈</span>
-              <span>意见反馈</span>
-              <svg class="row-chevron" aria-hidden="true" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"></path></svg>
-            </button>
             <button class="settings-menu-row" type="button" data-settings-detail="passwordDetail">
               <span class="settings-menu-icon">密</span>
               <span>修改密码</span>
@@ -180,6 +175,11 @@
             <button class="settings-menu-row" type="button" data-settings-detail="emailDetail">
               <span class="settings-menu-icon">邮</span>
               <span>修改邮箱</span>
+              <svg class="row-chevron" aria-hidden="true" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"></path></svg>
+            </button>
+            <button class="settings-menu-row" type="button" data-settings-detail="feedbackDetail">
+              <span class="settings-menu-icon">馈</span>
+              <span>意见反馈</span>
               <svg class="row-chevron" aria-hidden="true" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"></path></svg>
             </button>
             <button class="settings-menu-row" type="button" data-settings-detail="logoutDetail">
@@ -197,10 +197,13 @@
           <section class="settings-section" id="profileDetail" data-settings-detail-panel aria-labelledby="profileEditTitle" hidden>
             <h2 id="profileEditTitle">个人信息</h2>
             <form class="settings-panel" id="profileEdit">
-              <label>
-                <span>头像字</span>
-                <input id="editAvatarText" name="avatarText" maxlength="4" placeholder="深">
-              </label>
+              <div class="avatar-editor">
+                <div class="profile-avatar avatar-preview" id="editAvatarPreview" aria-hidden="true"></div>
+                <label class="avatar-upload-button" for="avatarUpload">
+                  <span>修改头像</span>
+                  <input id="avatarUpload" name="avatarUpload" type="file" accept="image/png,image/jpeg,image/webp">
+                </label>
+              </div>
               <label>
                 <span>昵称</span>
                 <input id="editNickname" name="nickname" maxlength="24" required>
