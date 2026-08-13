@@ -35,6 +35,26 @@ function setSubmitting(button, isSubmitting) {
   button.disabled = isSubmitting;
 }
 
+function wait(milliseconds) {
+  return new Promise((resolve) => window.setTimeout(resolve, milliseconds));
+}
+
+async function playLoginSuccessTransition() {
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  loginForm.inert = true;
+  bookPage.setAttribute('aria-hidden', 'false');
+  bookStage.classList.add('is-login-opening');
+
+  if (reduceMotion) {
+    await wait(80);
+    return;
+  }
+
+  await wait(1080);
+  bookStage.classList.add('is-login-zooming');
+  await wait(820);
+}
+
 function resetTurnstile() {
   if (window.turnstile && turnstileId !== null) {
     window.turnstile.reset(turnstileId);
@@ -195,6 +215,7 @@ loginForm.addEventListener('submit', async (event) => {
       username: String(formData.get('username') || '').trim(),
       password: String(formData.get('password') || ''),
     });
+    await playLoginSuccessTransition();
     window.location.replace('/main');
   } catch (error) {
     setMessage(loginMessage, error.message, 'error');
