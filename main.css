@@ -572,11 +572,61 @@ textarea {
   padding: 28px 0 54px;
 }
 
+.settings-menu {
+  border-top: 1px solid var(--line);
+}
+
+.settings-menu-row {
+  display: grid;
+  width: 100%;
+  min-height: 58px;
+  grid-template-columns: 32px 1fr 20px;
+  align-items: center;
+  gap: 12px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  padding: 0;
+  background: transparent;
+  color: var(--ink);
+  text-align: left;
+}
+
+.settings-menu-row:hover,
+.settings-menu-row:focus-visible {
+  background: rgba(233, 87, 22, 0.06);
+}
+
+.settings-menu-row.is-danger {
+  color: #a93120;
+}
+
+.settings-menu-icon {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: #9b3c20;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.settings-menu-row.is-danger .settings-menu-icon {
+  background: rgba(169, 49, 32, 0.1);
+  color: #a93120;
+}
+
+.settings-menu-row > span:nth-child(2) {
+  font-size: 14px;
+  font-weight: 800;
+}
+
 .settings-section {
   display: grid;
   gap: 15px;
-  border-bottom: 1px solid var(--line);
-  padding-bottom: 26px;
+  border-top: 1px solid var(--line);
+  padding-top: 18px;
 }
 
 .settings-section > h2 {
@@ -601,7 +651,8 @@ textarea {
 .settings-panel label span,
 .security-panel label span,
 .danger-zone label span,
-.security-panel h3 {
+.security-panel h2,
+.danger-zone h2 {
   color: #5d554e;
   font-size: 12px;
   font-weight: 800;
@@ -673,18 +724,22 @@ textarea {
 }
 
 .security-panel form,
-.danger-zone {
+.danger-zone,
+.danger-zone form {
   display: grid;
   gap: 13px;
 }
 
-.security-panel form {
-  border-bottom: 1px solid var(--line);
-  padding-bottom: 20px;
+.security-panel h2,
+.danger-zone h2 {
+  margin: 0;
 }
 
-.security-panel h3 {
+.settings-detail-copy {
   margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.7;
 }
 
 .danger-zone {

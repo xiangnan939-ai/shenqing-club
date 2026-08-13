@@ -8,9 +8,9 @@
     <meta property="og:title" content="深情俱乐部">
     <meta property="og:type" content="website">
     <title>深情俱乐部</title>
-    <link rel="stylesheet" href="main.css?v=7">
+    <link rel="stylesheet" href="main.css?v=8">
     <link rel="stylesheet" href="zhao-game.css?v=2">
-    <script src="main.js?v=7" defer></script>
+    <script src="main.js?v=8" defer></script>
     <script src="zhao-game.js?v=2" type="module"></script>
   </head>
   <body class="session-loading">
@@ -161,7 +161,40 @@
         </header>
 
         <div class="settings-content">
-          <section class="settings-section" aria-labelledby="profileEditTitle">
+          <section class="settings-menu" id="settingsMenu" aria-label="设置功能">
+            <button class="settings-menu-row" type="button" data-settings-detail="profileDetail">
+              <span class="settings-menu-icon">资</span>
+              <span>资料修改</span>
+              <svg class="row-chevron" aria-hidden="true" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"></path></svg>
+            </button>
+            <button class="settings-menu-row" type="button" data-settings-detail="feedbackDetail">
+              <span class="settings-menu-icon">馈</span>
+              <span>意见反馈</span>
+              <svg class="row-chevron" aria-hidden="true" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"></path></svg>
+            </button>
+            <button class="settings-menu-row" type="button" data-settings-detail="passwordDetail">
+              <span class="settings-menu-icon">密</span>
+              <span>修改密码</span>
+              <svg class="row-chevron" aria-hidden="true" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"></path></svg>
+            </button>
+            <button class="settings-menu-row" type="button" data-settings-detail="emailDetail">
+              <span class="settings-menu-icon">邮</span>
+              <span>修改邮箱</span>
+              <svg class="row-chevron" aria-hidden="true" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"></path></svg>
+            </button>
+            <button class="settings-menu-row" type="button" data-settings-detail="logoutDetail">
+              <span class="settings-menu-icon">退</span>
+              <span>退出登录</span>
+              <svg class="row-chevron" aria-hidden="true" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"></path></svg>
+            </button>
+            <button class="settings-menu-row is-danger" type="button" data-settings-detail="deleteDetail">
+              <span class="settings-menu-icon">销</span>
+              <span>注销账号</span>
+              <svg class="row-chevron" aria-hidden="true" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"></path></svg>
+            </button>
+          </section>
+
+          <section class="settings-section" id="profileDetail" data-settings-detail-panel aria-labelledby="profileEditTitle" hidden>
             <h2 id="profileEditTitle">个人信息</h2>
             <form class="settings-panel" id="profileEdit">
               <label>
@@ -181,7 +214,7 @@
             </form>
           </section>
 
-          <section class="settings-section" aria-labelledby="feedbackTitle">
+          <section class="settings-section" id="feedbackDetail" data-settings-detail-panel aria-labelledby="feedbackTitle" hidden>
             <h2 id="feedbackTitle">意见反馈</h2>
             <form class="settings-panel" id="feedbackPanel">
               <label>
@@ -197,10 +230,9 @@
             </form>
           </section>
 
-          <section class="settings-section security-panel" aria-labelledby="securityTitle">
-            <h2 id="securityTitle">账号安全</h2>
+          <section class="settings-section security-panel" id="passwordDetail" data-settings-detail-panel aria-labelledby="passwordTitle" hidden>
             <form id="passwordForm">
-              <h3>修改密码</h3>
+              <h2 id="passwordTitle">修改密码</h2>
               <label>
                 <span>当前密码</span>
                 <input name="currentPassword" type="password" autocomplete="current-password" required>
@@ -216,9 +248,11 @@
               <p class="settings-message" id="passwordStatus" aria-live="polite"></p>
               <button class="primary-action" type="submit">更新密码</button>
             </form>
+          </section>
 
+          <section class="settings-section security-panel" id="emailDetail" data-settings-detail-panel aria-labelledby="emailTitle" hidden>
             <form id="emailForm">
-              <h3>修改邮箱</h3>
+              <h2 id="emailTitle">修改邮箱</h2>
               <label>
                 <span>新邮箱</span>
                 <input name="email" type="email" autocomplete="email" required>
@@ -232,11 +266,16 @@
             </form>
           </section>
 
-          <section class="settings-section danger-zone" aria-labelledby="dangerTitle">
-            <h2 id="dangerTitle">其他</h2>
+          <section class="settings-section danger-zone" id="logoutDetail" data-settings-detail-panel aria-labelledby="logoutTitle" hidden>
+            <h2 id="logoutTitle">退出登录</h2>
+            <p class="settings-detail-copy">退出后需要重新输入账号和密码才能进入。</p>
             <button class="secondary-action" type="button" id="logoutButton">退出登录</button>
+          </section>
+
+          <section class="settings-section danger-zone" id="deleteDetail" data-settings-detail-panel aria-labelledby="deleteTitle" hidden>
             <form id="deleteAccountForm">
-              <h3>注销账号</h3>
+              <h2 id="deleteTitle">注销账号</h2>
+              <p class="settings-detail-copy">账号注销后将无法恢复，请确认后再继续。</p>
               <label>
                 <span>当前密码</span>
                 <input name="password" type="password" autocomplete="current-password" required>

@@ -15,6 +15,10 @@ const emptyFriends = document.querySelector('#emptyFriends');
 const appToast = document.querySelector('#appToast');
 const settingsOpeners = document.querySelectorAll('#openSettings, #openSettingsRow');
 const backFromSettings = document.querySelector('#backFromSettings');
+const settingsTitle = document.querySelector('#settingsTitle');
+const settingsMenu = document.querySelector('#settingsMenu');
+const settingsDetailButtons = document.querySelectorAll('[data-settings-detail]');
+const settingsDetailPanels = document.querySelectorAll('[data-settings-detail-panel]');
 const profileEdit = document.querySelector('#profileEdit');
 const profileEditMessage = document.querySelector('#profileEditMessage');
 const editAvatarText = document.querySelector('#editAvatarText');
@@ -33,6 +37,16 @@ let toastTimer;
 let currentProfile = null;
 let activityTimer = null;
 let previousMainView = 'profile';
+let activeSettingsDetail = '';
+
+const settingsDetailTitles = {
+  profileDetail: '资料修改',
+  feedbackDetail: '意见反馈',
+  passwordDetail: '修改密码',
+  emailDetail: '修改邮箱',
+  logoutDetail: '退出登录',
+  deleteDetail: '注销账号',
+};
 
 function switchView(target) {
   views.forEach((view) => {
@@ -146,6 +160,30 @@ function openSettings() {
   const activeView = document.querySelector('.app-view.is-active');
   previousMainView = activeView?.dataset.view === 'settings' ? 'profile' : activeView?.dataset.view || 'profile';
   switchView('settings');
+  showSettingsMenu();
+  document.querySelector('#settingsView').scrollTop = 0;
+  window.setTimeout(() => backFromSettings.focus(), 0);
+}
+
+function showSettingsMenu() {
+  activeSettingsDetail = '';
+  settingsTitle.textContent = '设置';
+  settingsMenu.hidden = false;
+  settingsDetailPanels.forEach((panel) => {
+    panel.hidden = true;
+    panel.classList.remove('is-active');
+  });
+}
+
+function openSettingsDetail(detailId) {
+  activeSettingsDetail = detailId;
+  settingsTitle.textContent = settingsDetailTitles[detailId] || '设置';
+  settingsMenu.hidden = true;
+  settingsDetailPanels.forEach((panel) => {
+    const active = panel.id === detailId;
+    panel.hidden = !active;
+    panel.classList.toggle('is-active', active);
+  });
   document.querySelector('#settingsView').scrollTop = 0;
   window.setTimeout(() => backFromSettings.focus(), 0);
 }
@@ -168,7 +206,17 @@ settingsOpeners.forEach((button) => {
   button.addEventListener('click', openSettings);
 });
 
-backFromSettings.addEventListener('click', () => switchView(previousMainView || 'profile'));
+settingsDetailButtons.forEach((button) => {
+  button.addEventListener('click', () => openSettingsDetail(button.dataset.settingsDetail));
+});
+
+backFromSettings.addEventListener('click', () => {
+  if (activeSettingsDetail) {
+    showSettingsMenu();
+    return;
+  }
+  switchView(previousMainView || 'profile');
+});
 
 profileEdit.addEventListener('submit', async (event) => {
   event.preventDefault();
