@@ -8,9 +8,9 @@
     <meta property="og:title" content="深情俱乐部">
     <meta property="og:type" content="website">
     <title>深情俱乐部</title>
-    <link rel="stylesheet" href="main.css?v=9">
+    <link rel="stylesheet" href="main.css?v=10">
     <link rel="stylesheet" href="zhao-game.css?v=2">
-    <script src="main.js?v=9" defer></script>
+    <script src="main.js?v=10" defer></script>
     <script src="zhao-game.js?v=2" type="module"></script>
   </head>
   <body class="session-loading">
@@ -34,15 +34,29 @@
       </section>
 
       <section class="app-view" id="friendsView" data-view="friends" aria-labelledby="friendsTitle" hidden>
-        <header class="view-header friends-header">
+        <header class="view-header friends-header" id="friendsHeader">
+          <button class="back-button friends-back" type="button" id="backFromChat" aria-label="返回好友列表" hidden>
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"></path></svg>
+            <span>返回</span>
+          </button>
           <div>
             <p>CONNECTIONS</p>
             <h1 id="friendsTitle">好友</h1>
           </div>
-          <span class="friend-count">3 位好友</span>
+          <button class="header-icon-button" id="openAddFriend" type="button" aria-label="添加好友" title="添加好友">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"></path></svg>
+          </button>
         </header>
 
-        <div class="friends-content">
+        <div class="friends-content" id="friendsHome">
+          <button class="friend-requests-entry" id="openFriendRequests" type="button">
+            <span class="request-entry-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="m17 11 2 2 4-4"></path></svg>
+            </span>
+            <span><strong>好友申请</strong><small id="friendRequestSummary">暂无新的好友申请</small></span>
+            <b id="friendRequestCount" hidden>0</b>
+            <svg class="row-chevron" aria-hidden="true" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"></path></svg>
+          </button>
           <label class="search-box" for="friendSearch">
             <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>
             <input id="friendSearch" type="search" placeholder="搜索好友" autocomplete="off">
@@ -50,43 +64,42 @@
 
           <div class="friend-section-heading">
             <h2>所有好友</h2>
-            <span id="visibleFriendCount">3</span>
+            <span id="visibleFriendCount">0</span>
           </div>
 
-          <ul class="friend-list" id="friendList">
-            <li class="friend-row" data-friend="晚风">
-              <div class="friend-avatar avatar-coral" aria-hidden="true">晚</div>
-              <div class="friend-info">
-                <strong>晚风</strong>
-                <span><i class="presence is-online"></i>在线</span>
-              </div>
-              <button class="message-button" type="button" aria-label="给晚风发消息" title="发消息">
-                <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"></path></svg>
-              </button>
-            </li>
-            <li class="friend-row" data-friend="小满">
-              <div class="friend-avatar avatar-olive" aria-hidden="true">满</div>
-              <div class="friend-info">
-                <strong>小满</strong>
-                <span><i class="presence is-online"></i>在线</span>
-              </div>
-              <button class="message-button" type="button" aria-label="给小满发消息" title="发消息">
-                <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"></path></svg>
-              </button>
-            </li>
-            <li class="friend-row" data-friend="长街">
-              <div class="friend-avatar avatar-blue" aria-hidden="true">长</div>
-              <div class="friend-info">
-                <strong>长街</strong>
-                <span><i class="presence"></i>2 小时前在线</span>
-              </div>
-              <button class="message-button" type="button" aria-label="给长街发消息" title="发消息">
-                <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"></path></svg>
-              </button>
-            </li>
-          </ul>
+          <ul class="friend-list" id="friendList"></ul>
+          <p class="empty-friends" id="emptyFriends">还没有好友，点击右上角添加</p>
+        </div>
 
-          <p class="empty-friends" id="emptyFriends" hidden>没有找到这个好友</p>
+        <div class="friend-requests-page" id="friendRequestsPage" hidden>
+          <section class="request-section" aria-labelledby="incomingRequestTitle">
+            <div class="friend-section-heading">
+              <h2 id="incomingRequestTitle">收到的申请</h2>
+              <span id="incomingRequestCount">0</span>
+            </div>
+            <ul class="request-list" id="incomingRequestList"></ul>
+            <p class="empty-request" id="emptyIncomingRequests">暂无收到的申请</p>
+          </section>
+          <section class="request-section" aria-labelledby="outgoingRequestTitle">
+            <div class="friend-section-heading">
+              <h2 id="outgoingRequestTitle">已发送的申请</h2>
+              <span id="outgoingRequestCount">0</span>
+            </div>
+            <ul class="request-list" id="outgoingRequestList"></ul>
+            <p class="empty-request" id="emptyOutgoingRequests">暂无等待处理的申请</p>
+          </section>
+        </div>
+
+        <div class="chat-page" id="chatPage" hidden>
+          <div class="chat-messages" id="chatMessages" aria-live="polite"></div>
+          <p class="chat-empty" id="chatEmpty">还没有消息，打个招呼吧</p>
+          <form class="chat-composer" id="chatForm">
+            <label for="chatInput" class="sr-only">输入消息</label>
+            <textarea id="chatInput" name="message" rows="1" maxlength="500" placeholder="输入消息" required></textarea>
+            <button type="submit" aria-label="发送消息" title="发送">
+              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4Z"></path><path d="M22 2 11 13"></path></svg>
+            </button>
+          </form>
         </div>
       </section>
 
@@ -291,6 +304,7 @@
         <button class="nav-item" type="button" data-target="friends" aria-controls="friendsView">
           <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
           <span>好友</span>
+          <i class="nav-badge" id="friendNavBadge" hidden>0</i>
         </button>
         <button class="nav-item" type="button" data-target="profile" aria-controls="profileView">
           <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20 21a8 8 0 0 0-16 0"></path><circle cx="12" cy="7" r="4"></circle></svg>
@@ -300,6 +314,25 @@
 
       <p class="app-toast" id="appToast" role="status" aria-live="polite"></p>
     </main>
+    <div class="add-friend-modal" id="addFriendModal" role="dialog" aria-modal="true" aria-labelledby="addFriendTitle" hidden>
+      <button class="modal-backdrop" type="button" aria-label="关闭添加好友" data-close-add-friend></button>
+      <section class="add-friend-dialog">
+        <button class="modal-close" type="button" aria-label="关闭" data-close-add-friend>&times;</button>
+        <header>
+          <p>ADD FRIEND</p>
+          <h2 id="addFriendTitle">添加好友</h2>
+        </header>
+        <form class="add-friend-form" id="addFriendForm">
+          <label for="addFriendUsername">对方账号</label>
+          <div>
+            <input id="addFriendUsername" name="username" type="text" minlength="2" maxlength="24" placeholder="输入完整账号" autocomplete="off" required>
+            <button type="submit">查找</button>
+          </div>
+        </form>
+        <p class="add-friend-message" id="addFriendMessage" aria-live="polite"></p>
+        <div class="user-search-result" id="userSearchResult" hidden></div>
+      </section>
+    </div>
     <section class="zhao-game" id="zhaoGame" aria-label="赵云与阿斗游戏" hidden>
       <div class="zy-game-shell" id="zyGameShell"></div>
       <p class="zy-live" id="zyLive" role="status" aria-live="polite"></p>

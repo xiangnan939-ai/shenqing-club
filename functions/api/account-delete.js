@@ -25,7 +25,15 @@ export async function onRequestPost(context) {
     return json({ error: '当前密码不正确。' }, 401);
   }
 
-  await context.env.DB.prepare('DELETE FROM users WHERE username = ?').bind(user.username).run();
+  await context.env.DB.batch([
+    context.env.DB.prepare(
+      'DELETE FROM direct_messages WHERE sender_id = ? OR recipient_id = ?',
+    ).bind(user.id, user.id),
+    context.env.DB.prepare(
+      'DELETE FROM friendships WHERE user_low_id = ? OR user_high_id = ?',
+    ).bind(user.id, user.id),
+    context.env.DB.prepare('DELETE FROM users WHERE username = ?').bind(user.username),
+  ]);
   return json({ ok: true }, 200, { 'Set-Cookie': clearSessionCookie() });
 }
 

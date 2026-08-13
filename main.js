@@ -9,9 +9,35 @@ const activeTime = document.querySelector('#activeTime');
 const profileAvatar = document.querySelector('#profileAvatar');
 const logoutButton = document.querySelector('#logoutButton');
 const friendSearch = document.querySelector('#friendSearch');
-const friendRows = document.querySelectorAll('[data-friend]');
+const friendList = document.querySelector('#friendList');
 const visibleFriendCount = document.querySelector('#visibleFriendCount');
 const emptyFriends = document.querySelector('#emptyFriends');
+const friendsHome = document.querySelector('#friendsHome');
+const friendRequestsPage = document.querySelector('#friendRequestsPage');
+const incomingRequestList = document.querySelector('#incomingRequestList');
+const outgoingRequestList = document.querySelector('#outgoingRequestList');
+const incomingRequestCount = document.querySelector('#incomingRequestCount');
+const outgoingRequestCount = document.querySelector('#outgoingRequestCount');
+const emptyIncomingRequests = document.querySelector('#emptyIncomingRequests');
+const emptyOutgoingRequests = document.querySelector('#emptyOutgoingRequests');
+const friendRequestCount = document.querySelector('#friendRequestCount');
+const friendRequestSummary = document.querySelector('#friendRequestSummary');
+const friendNavBadge = document.querySelector('#friendNavBadge');
+const openFriendRequests = document.querySelector('#openFriendRequests');
+const openAddFriend = document.querySelector('#openAddFriend');
+const backFromChat = document.querySelector('#backFromChat');
+const friendsTitle = document.querySelector('#friendsTitle');
+const chatPage = document.querySelector('#chatPage');
+const chatMessages = document.querySelector('#chatMessages');
+const chatEmpty = document.querySelector('#chatEmpty');
+const chatForm = document.querySelector('#chatForm');
+const chatInput = document.querySelector('#chatInput');
+const addFriendModal = document.querySelector('#addFriendModal');
+const addFriendForm = document.querySelector('#addFriendForm');
+const addFriendUsername = document.querySelector('#addFriendUsername');
+const addFriendMessage = document.querySelector('#addFriendMessage');
+const userSearchResult = document.querySelector('#userSearchResult');
+const addFriendClosers = document.querySelectorAll('[data-close-add-friend]');
 const appToast = document.querySelector('#appToast');
 const settingsOpeners = document.querySelectorAll('#openSettings');
 const backFromSettings = document.querySelector('#backFromSettings');
@@ -40,6 +66,10 @@ let activityTimer = null;
 let previousMainView = 'profile';
 let activeSettingsDetail = '';
 let selectedAvatarImage = '';
+let friendsData = { friends: [], incoming: [], outgoing: [] };
+let activeFriend = null;
+let friendRefreshTimer = null;
+let chatRefreshTimer = null;
 const MAX_AVATAR_DATA_LENGTH = 210000;
 
 const settingsDetailTitles = {
@@ -64,6 +94,13 @@ function switchView(target) {
     if (active) item.setAttribute('aria-current', 'page');
     else item.removeAttribute('aria-current');
   });
+
+  if (target === 'friends') {
+    showFriendsHome();
+    loadFriends().catch((error) => showToast(error.message));
+  } else {
+    stopChatRefresh();
+  }
 }
 
 function showToast(message) {
@@ -170,12 +207,15 @@ async function cropAvatarFile(file) {
 async function apiRequest(endpoint, payload, method = 'POST') {
   let response;
   try {
-    response = await fetch(endpoint, {
+    const options = {
       method,
       credentials: 'same-origin',
-      headers: { 'Content-Type': 'application/json' },
-      body: payload == null ? undefined : JSON.stringify(payload),
-    });
+    };
+    if (payload != null) {
+      options.headers = { 'Content-Type': 'application/json' };
+      options.body = JSON.stringify(payload);
+    }
+    response = await fetch(endpoint, options);
   } catch {
     throw new Error('网络连接中断，请稍后重试。');
   }
@@ -200,6 +240,10 @@ async function loadSession() {
   try {
     await refreshSession();
     document.body.classList.remove('session-loading');
+    await loadFriends();
+    friendRefreshTimer = window.setInterval(() => {
+      loadFriends({ quiet: true }).catch(() => {});
+    }, 15000);
     activityTimer = window.setInterval(() => {
       refreshSession().catch(() => {});
     }, 60 * 1000);
@@ -208,18 +252,283 @@ async function loadSession() {
   }
 }
 
-function filterFriends() {
-  const query = friendSearch.value.normalize('NFKC').trim().toLowerCase();
-  let visible = 0;
+function createAvatar(profile, className = 'friend-avatar') {
+  const avatar = document.createElement('div');
+  avatar.className = className;
+  avatar.setAttribute('aria-hidden', 'true');
+  if (profile.avatarImage) {
+    avatar.classList.add('has-image');
+    avatar.style.backgroundImage = `url("${profile.avatarImage}")`;
+  }
+  return avatar;
+}
 
-  friendRows.forEach((row) => {
-    const matches = row.dataset.friend.toLowerCase().includes(query);
-    row.hidden = !matches;
-    if (matches) visible += 1;
+function formatPresence(friend) {
+  if (friend.online) return '在线';
+  if (!friend.lastSeenAt) return '最近未上线';
+  const elapsed = Math.max(0, Date.now() - new Date(friend.lastSeenAt).getTime());
+  const minutes = Math.floor(elapsed / 60000);
+  if (minutes < 60) return `${Math.max(1, minutes)} 分钟前在线`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} 小时前在线`;
+  return `${Math.floor(hours / 24)} 天前在线`;
+}
+
+function renderFriendList() {
+  const query = friendSearch.value.normalize('NFKC').trim().toLowerCase();
+  const visibleFriends = friendsData.friends.filter((friend) => (
+    friend.username.toLowerCase().includes(query)
+    || friend.nickname.toLowerCase().includes(query)
+  ));
+  friendList.replaceChildren();
+
+  visibleFriends.forEach((friend) => {
+    const row = document.createElement('li');
+    row.className = 'friend-row';
+    row.dataset.friendId = String(friend.id);
+    const avatar = createAvatar(friend);
+    const info = document.createElement('span');
+    info.className = 'friend-info';
+    const name = document.createElement('strong');
+    name.textContent = friend.nickname;
+    const preview = document.createElement('span');
+    const presence = document.createElement('i');
+    presence.className = `presence${friend.online ? ' is-online' : ''}`;
+    preview.append(presence, document.createTextNode(
+      friend.lastMessage || formatPresence(friend),
+    ));
+    info.append(name, preview);
+
+    const side = document.createElement('span');
+    side.className = 'friend-row-side';
+    if (friend.unreadCount) {
+      const unread = document.createElement('b');
+      unread.className = 'unread-badge';
+      unread.textContent = friend.unreadCount > 99 ? '99+' : String(friend.unreadCount);
+      side.append(unread);
+    }
+    const chevron = document.createElement('span');
+    chevron.className = 'friend-chevron';
+    chevron.textContent = '›';
+    side.append(chevron);
+    row.append(avatar, info, side);
+    row.addEventListener('click', () => openChat(friend));
+    friendList.append(row);
   });
 
-  visibleFriendCount.textContent = String(visible);
-  emptyFriends.hidden = visible !== 0;
+  visibleFriendCount.textContent = String(visibleFriends.length);
+  emptyFriends.hidden = visibleFriends.length !== 0;
+  emptyFriends.textContent = friendsData.friends.length
+    ? '没有找到这个好友'
+    : '还没有好友，点击右上角添加';
+}
+
+function createRequestRow(request, incoming) {
+  const row = document.createElement('li');
+  row.className = 'request-row';
+  const avatar = createAvatar(request);
+  const info = document.createElement('span');
+  info.className = 'friend-info';
+  const name = document.createElement('strong');
+  name.textContent = request.nickname;
+  const account = document.createElement('span');
+  account.textContent = `账号：${request.username}`;
+  info.append(name, account);
+  row.append(avatar, info);
+
+  if (incoming) {
+    const actions = document.createElement('span');
+    actions.className = 'request-actions';
+    const decline = document.createElement('button');
+    decline.type = 'button';
+    decline.className = 'request-decline';
+    decline.textContent = '拒绝';
+    const accept = document.createElement('button');
+    accept.type = 'button';
+    accept.className = 'request-accept';
+    accept.textContent = '同意';
+    decline.addEventListener('click', () => respondToFriendRequest(request.friendshipId, 'decline'));
+    accept.addEventListener('click', () => respondToFriendRequest(request.friendshipId, 'accept'));
+    actions.append(decline, accept);
+    row.append(actions);
+  } else {
+    const pending = document.createElement('span');
+    pending.className = 'request-pending';
+    pending.textContent = '等待验证';
+    row.append(pending);
+  }
+  return row;
+}
+
+function renderFriendRequests() {
+  incomingRequestList.replaceChildren(...friendsData.incoming.map((item) => createRequestRow(item, true)));
+  outgoingRequestList.replaceChildren(...friendsData.outgoing.map((item) => createRequestRow(item, false)));
+  incomingRequestCount.textContent = String(friendsData.incoming.length);
+  outgoingRequestCount.textContent = String(friendsData.outgoing.length);
+  emptyIncomingRequests.hidden = friendsData.incoming.length !== 0;
+  emptyOutgoingRequests.hidden = friendsData.outgoing.length !== 0;
+
+  const count = friendsData.incoming.length;
+  friendRequestCount.hidden = count === 0;
+  friendNavBadge.hidden = count === 0;
+  friendRequestCount.textContent = String(count);
+  friendNavBadge.textContent = count > 9 ? '9+' : String(count);
+  friendRequestSummary.textContent = count ? `${count} 个申请待处理` : '暂无新的好友申请';
+}
+
+async function loadFriends({ quiet = false } = {}) {
+  try {
+    friendsData = await apiRequest('/api/friends', null, 'GET');
+    renderFriendList();
+    renderFriendRequests();
+  } catch (error) {
+    if (!quiet) throw error;
+  }
+}
+
+function showFriendsHome() {
+  stopChatRefresh();
+  activeFriend = null;
+  friendsTitle.textContent = '好友';
+  backFromChat.hidden = true;
+  openAddFriend.hidden = false;
+  friendsHome.hidden = false;
+  friendRequestsPage.hidden = true;
+  chatPage.hidden = true;
+}
+
+function showFriendRequestsPage() {
+  stopChatRefresh();
+  friendsTitle.textContent = '好友申请';
+  backFromChat.hidden = false;
+  openAddFriend.hidden = true;
+  friendsHome.hidden = true;
+  friendRequestsPage.hidden = false;
+  chatPage.hidden = true;
+}
+
+function renderMessages(messages) {
+  const wasNearBottom = chatMessages.scrollHeight - chatMessages.scrollTop - chatMessages.clientHeight < 100;
+  chatMessages.replaceChildren();
+  messages.forEach((message) => {
+    const bubble = document.createElement('article');
+    const mine = Number(message.senderId) === Number(currentProfile.id);
+    bubble.className = `chat-message${mine ? ' is-mine' : ''}`;
+    const body = document.createElement('p');
+    body.textContent = message.body;
+    const time = document.createElement('time');
+    const date = new Date(`${message.createdAt.replace(' ', 'T')}Z`);
+    time.textContent = date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+    bubble.append(body, time);
+    chatMessages.append(bubble);
+  });
+  chatEmpty.hidden = messages.length !== 0;
+  if (wasNearBottom || messages.length <= 1) chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+async function loadMessages({ quiet = false } = {}) {
+  if (!activeFriend) return;
+  try {
+    const result = await apiRequest(`/api/messages?friendId=${activeFriend.id}`, null, 'GET');
+    renderMessages(result.messages || []);
+    const friend = friendsData.friends.find((item) => item.id === activeFriend.id);
+    if (friend) friend.unreadCount = 0;
+    renderFriendList();
+  } catch (error) {
+    if (!quiet) showToast(error.message);
+  }
+}
+
+function stopChatRefresh() {
+  clearInterval(chatRefreshTimer);
+  chatRefreshTimer = null;
+}
+
+async function openChat(friend) {
+  activeFriend = friend;
+  friendsTitle.textContent = friend.nickname;
+  backFromChat.hidden = false;
+  openAddFriend.hidden = true;
+  friendsHome.hidden = true;
+  friendRequestsPage.hidden = true;
+  chatPage.hidden = false;
+  chatMessages.replaceChildren();
+  chatEmpty.hidden = false;
+  await loadMessages();
+  stopChatRefresh();
+  chatRefreshTimer = window.setInterval(() => loadMessages({ quiet: true }), 3000);
+  chatInput.focus();
+}
+
+async function respondToFriendRequest(friendshipId, action) {
+  try {
+    await apiRequest('/api/friend-response', { friendshipId, action });
+    showToast(action === 'accept' ? '已成为好友' : '已拒绝申请');
+    await loadFriends();
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+function openAddFriendModal() {
+  addFriendModal.hidden = false;
+  addFriendForm.reset();
+  userSearchResult.hidden = true;
+  setMessage(addFriendMessage, '输入对方注册时使用的完整账号');
+  window.setTimeout(() => addFriendUsername.focus(), 0);
+}
+
+function closeAddFriendModal() {
+  addFriendModal.hidden = true;
+  userSearchResult.hidden = true;
+  openAddFriend.focus();
+}
+
+function renderSearchResult(user) {
+  userSearchResult.replaceChildren();
+  if (!user) {
+    userSearchResult.hidden = true;
+    setMessage(addFriendMessage, '没有找到这个账号。', 'error');
+    return;
+  }
+  const avatar = createAvatar(user);
+  const info = document.createElement('span');
+  info.className = 'friend-info';
+  const name = document.createElement('strong');
+  name.textContent = user.nickname;
+  const account = document.createElement('span');
+  account.textContent = `账号：${user.username}`;
+  info.append(name, account);
+  const action = document.createElement('button');
+  action.type = 'button';
+  const statuses = {
+    accepted: '已是好友',
+    outgoing: '等待验证',
+    incoming: '去处理申请',
+    none: '添加',
+  };
+  action.textContent = statuses[user.relationshipStatus] || '添加';
+  action.disabled = ['accepted', 'outgoing'].includes(user.relationshipStatus);
+  action.addEventListener('click', async () => {
+    if (user.relationshipStatus === 'incoming') {
+      closeAddFriendModal();
+      showFriendRequestsPage();
+      return;
+    }
+    action.disabled = true;
+    try {
+      await apiRequest('/api/friend-request', { username: user.username });
+      action.textContent = '等待验证';
+      setMessage(addFriendMessage, '好友申请已发送。', 'success');
+      await loadFriends({ quiet: true });
+    } catch (error) {
+      action.disabled = false;
+      setMessage(addFriendMessage, error.message, 'error');
+    }
+  });
+  userSearchResult.append(avatar, info, action);
+  userSearchResult.hidden = false;
+  setMessage(addFriendMessage, '');
 }
 
 function openSettings() {
@@ -258,14 +567,60 @@ navItems.forEach((item) => {
   item.addEventListener('click', () => switchView(item.dataset.target));
 });
 
-friendSearch.addEventListener('input', filterFriends);
+friendSearch.addEventListener('input', renderFriendList);
+openAddFriend.addEventListener('click', openAddFriendModal);
+openFriendRequests.addEventListener('click', showFriendRequestsPage);
+backFromChat.addEventListener('click', showFriendsHome);
+addFriendClosers.forEach((button) => button.addEventListener('click', closeAddFriendModal));
 
-document.querySelectorAll('.message-button').forEach((button) => {
-  button.addEventListener('click', () => {
-    const friendName = button.closest('[data-friend]').dataset.friend;
-    showToast(`${friendName}的聊天功能正在准备中`);
-    button.blur();
-  });
+addFriendForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const submit = addFriendForm.querySelector('button[type="submit"]');
+  submit.disabled = true;
+  userSearchResult.hidden = true;
+  setMessage(addFriendMessage, '正在查找…');
+  try {
+    const result = await apiRequest(
+      `/api/user-search?q=${encodeURIComponent(addFriendUsername.value.trim())}`,
+      null,
+      'GET',
+    );
+    renderSearchResult(result.user);
+  } catch (error) {
+    setMessage(addFriendMessage, error.message, 'error');
+  } finally {
+    submit.disabled = false;
+  }
+});
+
+chatForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  if (!activeFriend) return;
+  const body = chatInput.value.trim();
+  if (!body) return;
+  const submit = chatForm.querySelector('button[type="submit"]');
+  submit.disabled = true;
+  try {
+    await apiRequest('/api/messages', { friendId: activeFriend.id, body });
+    chatInput.value = '';
+    await loadMessages();
+    chatInput.focus();
+  } catch (error) {
+    showToast(error.message);
+  } finally {
+    submit.disabled = false;
+  }
+});
+
+chatInput.addEventListener('keydown', (event) => {
+  if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
+    event.preventDefault();
+    chatForm.requestSubmit();
+  }
+});
+
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && !addFriendModal.hidden) closeAddFriendModal();
 });
 
 settingsOpeners.forEach((button) => {
@@ -420,6 +775,8 @@ logoutButton.addEventListener('click', async () => {
 
 window.addEventListener('beforeunload', () => {
   clearInterval(activityTimer);
+  clearInterval(friendRefreshTimer);
+  stopChatRefresh();
 });
 
 loadSession();
