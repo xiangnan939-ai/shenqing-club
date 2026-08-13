@@ -554,3 +554,242 @@ button { -webkit-tap-highlight-color: transparent; }
   .zy-reserve-cell { min-height: 42px; }
   .zy-command-bar { min-height: calc(70px + env(safe-area-inset-bottom)); }
 }
+
+/* Web replacement for the original Spine battle scene. */
+.zy-battle-main {
+  display: block;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  border-bottom: 3px solid #35322d;
+}
+
+.zy-path-stage {
+  display: grid;
+  height: 100%;
+  min-height: 0;
+  grid-template-rows: 28px minmax(0, 1fr);
+  padding: 0 8px 7px;
+  background: rgba(199, 206, 189, 0.52);
+}
+
+.zy-stage-status {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  color: #4c483e;
+  font-size: 8px;
+}
+
+.zy-stage-status strong {
+  overflow: hidden;
+  color: #7f3026;
+  font-size: 9px;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.zy-path-grid {
+  position: relative;
+  display: grid;
+  width: 100%;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
+  aspect-ratio: 4 / 5;
+  grid-template-columns: repeat(var(--zy-cols), minmax(0, 1fr));
+  grid-template-rows: repeat(var(--zy-rows), minmax(0, 1fr));
+  place-self: center;
+  border: 3px solid #2e302b;
+  background: rgba(70, 77, 69, 0.72);
+  box-shadow: inset 0 0 0 2px rgba(236, 230, 204, 0.22), 0 5px 0 rgba(45, 42, 36, 0.18);
+  isolation: isolate;
+}
+
+.zy-path-grid::before {
+  position: absolute;
+  z-index: -3;
+  inset: 0;
+  opacity: 0.5;
+  background-image:
+    linear-gradient(rgba(39, 41, 36, 0.32) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(39, 41, 36, 0.32) 1px, transparent 1px);
+  background-size: calc(100% / var(--zy-cols)) calc(100% / var(--zy-rows));
+  content: "";
+}
+
+.zy-path-cell {
+  z-index: -2;
+  margin: 1px;
+  border: 1px solid rgba(88, 82, 68, 0.34);
+  background: #d7dbcf;
+  box-shadow: inset 0 -2px 0 rgba(96, 89, 75, 0.13);
+}
+
+.zy-path-cell.is-start::after {
+  display: grid;
+  height: 100%;
+  place-items: center;
+  color: #7d2f25;
+  font-family: "Kaiti SC", "STKaiti", "KaiTi", serif;
+  font-size: 12px;
+  font-weight: 900;
+  content: "敌";
+}
+
+.zy-map-slot {
+  z-index: 2;
+  min-width: 0;
+  min-height: 0;
+  margin: 2px;
+  border: 2px solid rgba(72, 72, 62, 0.78);
+  border-radius: 2px;
+  padding: 0;
+  background: #f2efe2;
+  color: #26231e;
+  box-shadow: inset 0 -2px 0 rgba(74, 69, 60, 0.12);
+}
+
+.zy-map-slot.is-locked {
+  border-color: rgba(49, 52, 47, 0.64);
+  background: rgba(65, 70, 64, 0.82);
+}
+
+.zy-map-slot.is-locked::after {
+  color: rgba(232, 227, 206, 0.28);
+  font-family: "Kaiti SC", "STKaiti", "KaiTi", serif;
+  font-size: 12px;
+  content: "封";
+}
+
+.zy-map-slot.is-selected {
+  border-color: #d9a22f;
+  box-shadow: inset 0 0 0 2px rgba(255, 223, 113, 0.64), 0 0 9px rgba(243, 183, 51, 0.72);
+}
+
+.zy-map-slot.is-drag-over {
+  border-color: #3e7772;
+  background: #dbe8dc;
+  box-shadow: inset 0 0 0 2px rgba(80, 119, 116, 0.46);
+}
+
+.zy-map-slot .zy-unit {
+  font-size: clamp(15px, 5.4vw, 27px);
+}
+
+.zy-map-slot .zy-unit[data-kind="general"] {
+  border: 0;
+  background: transparent;
+  font-size: clamp(11px, 3.7vw, 18px);
+  box-shadow: none;
+}
+
+.zy-map-slot .zy-level { font-size: 6px; }
+
+.zy-enemy {
+  position: absolute;
+  z-index: 6;
+  display: grid;
+  width: clamp(24px, 7.5%, 38px);
+  aspect-ratio: 1;
+  place-items: center;
+  border: 2px solid #26211d;
+  border-radius: 50%;
+  background: #b45140;
+  color: #fff0d1;
+  box-shadow: 0 2px 0 rgba(29, 25, 21, 0.3);
+  font-family: "Kaiti SC", "STKaiti", "KaiTi", serif;
+  font-weight: 900;
+  pointer-events: none;
+  translate: -50% -50%;
+  transition: left 90ms linear, top 90ms linear, filter 80ms linear, scale 80ms linear;
+}
+
+.zy-enemy i {
+  font-size: clamp(12px, 3.8vw, 19px);
+  font-style: normal;
+}
+
+.zy-enemy > b {
+  position: absolute;
+  right: -2px;
+  bottom: -5px;
+  left: -2px;
+  height: 4px;
+  overflow: hidden;
+  border: 1px solid #2a2520;
+  border-radius: 2px;
+  background: #282823;
+}
+
+.zy-enemy > b > span {
+  display: block;
+  height: 100%;
+  background: #e24347;
+  transition: width 100ms linear;
+}
+
+.zy-enemy.is-boss {
+  width: clamp(31px, 9.5%, 47px);
+  border-color: #6a250e;
+  background: #31241c;
+  color: #ffcf54;
+  box-shadow: 0 0 0 3px rgba(222, 157, 40, 0.72), 0 3px 0 rgba(29, 25, 21, 0.34);
+}
+
+.zy-enemy.is-hit {
+  filter: brightness(1.8);
+  scale: 1.12;
+}
+
+.zy-enemy.is-stunned::after {
+  position: absolute;
+  top: -12px;
+  color: #f4ce4d;
+  font-family: system-ui, sans-serif;
+  font-size: 10px;
+  content: "✦";
+}
+
+.zy-adou-base {
+  z-index: 4;
+  display: grid;
+  margin: -2px;
+  place-items: center;
+  border: 3px double #37342d;
+  background: #eee6cf;
+  color: #161512;
+  box-shadow: 0 0 0 3px rgba(191, 144, 48, 0.4);
+}
+
+.zy-adou-base b {
+  font-family: "Kaiti SC", "STKaiti", "KaiTi", serif;
+  font-size: clamp(21px, 7vw, 34px);
+}
+
+.zy-adou-base > span {
+  position: absolute;
+  display: flex;
+  bottom: -13px;
+  color: #d6303c;
+  font-size: 8px;
+}
+
+.zy-reserve-tray { min-height: 58px; }
+.zy-reserve-cell { min-height: 44px; }
+.zy-command-bar { min-height: calc(76px + env(safe-area-inset-bottom)); }
+
+@media (min-width: 700px) {
+  .zy-path-stage { padding-right: 14px; padding-left: 14px; }
+}
+
+@media (max-height: 720px) {
+  .zy-path-stage { grid-template-rows: 23px minmax(0, 1fr); padding-bottom: 4px; }
+  .zy-stage-status { font-size: 7px; }
+  .zy-reserve-tray { min-height: 50px; }
+  .zy-reserve-cell { min-height: 38px; }
+  .zy-command-bar { min-height: calc(66px + env(safe-area-inset-bottom)); }
+}

@@ -42,7 +42,7 @@ export class SaveService {
 
   defaultSave(now = new Date()) {
     return {
-      saveVersion: 2,
+      saveVersion: 3,
       coins: GAMEPLAY_CONFIG.meta.initialCoins,
       energy: GAMEPLAY_CONFIG.meta.initialEnergy,
       lastEnergyAt: now.toISOString(),
@@ -53,8 +53,8 @@ export class SaveService {
       daily: {
         dateKey: localDateKey(now),
         shopSeed: hashString(localDateKey(now)),
-        ownedItems: [],
-        activeLoadout: [],
+        ownedItems: ['item_mine', 'item_trap', 'item_haste'],
+        activeLoadout: ['item_mine', 'item_trap', 'item_haste'],
         passiveLoadout: [],
       },
       claimedSessions: [],
@@ -79,13 +79,14 @@ export class SaveService {
   migrate(value, now = new Date()) {
     const defaults = this.defaultSave(now);
     if (!value || typeof value !== 'object') return defaults;
+    const legacyDaily = Number(value.saveVersion || 0) < 3;
     return {
       ...defaults,
       ...value,
-      saveVersion: 2,
+      saveVersion: 3,
       rank: { ...defaults.rank, ...(value.rank || {}) },
       settings: { ...defaults.settings, ...(value.settings || {}) },
-      daily: { ...defaults.daily, ...(value.daily || {}) },
+      daily: legacyDaily ? defaults.daily : { ...defaults.daily, ...(value.daily || {}) },
       claimedSessions: Array.isArray(value.claimedSessions) ? value.claimedSessions.slice(-50) : [],
     };
   }
@@ -111,8 +112,8 @@ export class SaveService {
     save.daily = {
       dateKey: key,
       shopSeed: hashString(key),
-      ownedItems: [],
-      activeLoadout: [],
+      ownedItems: ['item_mine', 'item_trap', 'item_haste'],
+      activeLoadout: ['item_mine', 'item_trap', 'item_haste'],
       passiveLoadout: [],
     };
     return true;
@@ -125,7 +126,7 @@ export class SaveService {
   claimResult(save, result) {
     if (save.claimedSessions.includes(result.sessionId)) return { claimed: false, coins: 0, stars: 0 };
     const reward = result.baseCoins;
-    const stars = result.victory ? GAMEPLAY_CONFIG.result.winStars : GAMEPLAY_CONFIG.result.loseStars;
+    const stars = result.victory ? result.stars : GAMEPLAY_CONFIG.result.loseStars;
     save.coins += reward;
     applyStars(save.rank, stars);
     save.claimedSessions.push(result.sessionId);
@@ -142,35 +143,31 @@ export class BattleSession {
     this.rng = new SeededRng(this.seed);
     this.map = this.rng.pick(MAPS);
     this.wave = 1;
-    this.waveTime = GAMEPLAY_CONFIG.battle.waveSeconds;
-    this.interWaveTime = 0;
     this.paused = false;
     this.over = false;
     this.victory = false;
     this.clearedWaves = 0;
     this.maxPower = 0;
     this.activeSeconds = 0;
-    this.lastEvent = '双方正在整军';
+    this.interWaveTime = 0;
+    this.spawnClock = GAMEPLAY_CONFIG.battle.spawnIntervalSeconds;
+    this.enemySerial = 0;
+    this.enemies = [];
+    this.spawnQueue = createWaveQueue(this.wave, this.rng);
+    this.lastEvent = '第 1 波敌军来袭';
     this.player = createSide('player', playerLoadout, equippedWeapons, this.rng);
-    this.opponent = createSide('opponent', makeAiLoadout(this.rng), pickAiWeapons(this.rng), this.rng);
-    this.profile = createAiProfile(this.rng);
-    this.enemy = createEnemyState(this.wave);
-    this.player.pressureHp = this.enemy.maxHp;
-    this.player.pressureMaxHp = this.enemy.maxHp;
-    this.opponent.pressureHp = this.enemy.maxHp;
-    this.opponent.pressureMaxHp = this.enemy.maxHp;
-    this.aiClock = 0;
-    this.incomeClock = 0;
     this.result = null;
   }
 
   executeCommand(sideId, command) {
     if (this.over || this.paused) return { ok: false, reason: 'battle_inactive' };
-    const side = sideId === 'opponent' ? this.opponent : this.player;
+    const side = this.player;
     switch (command.type) {
       case 'Recruit': return recruit(side, this.rng);
       case 'Deploy': return deploy(side, command.from, command.to);
       case 'Move': return moveOrMerge(side, command.from, command.to);
+      case 'Bench': return bench(side, command.from, command.to);
+      case 'MoveReserve': return moveReserve(side, command.from, command.to);
       case 'OpenLand': return openLand(side);
       case 'Recycle': return recycle(side, command.location, command.index);
       case 'UseItem': return this.useItem(side, command.itemId, command.target);
@@ -185,6 +182,7 @@ export class BattleSession {
     if (!handler) return { ok: false, reason: 'missing_effect' };
     const result = handler({ session: this, side, target, rng: this.rng });
     if (result.ok) side.usedItems.push(itemId);
+    if (side.adouHp <= 0) this.finish(false);
     return result;
   }
 
@@ -194,118 +192,239 @@ export class BattleSession {
 
   tick(seconds) {
     if (this.over || this.paused || seconds <= 0) return;
-    const delta = Math.min(seconds, 0.5);
+    let remaining = Math.min(seconds, 2);
+    while (remaining > 0 && !this.over) {
+      const delta = Math.min(remaining, 0.1);
+      this.updateStep(delta);
+      remaining -= delta;
+    }
+  }
+
+  updateStep(delta) {
     this.activeSeconds += delta;
-    this.aiClock += delta;
-    this.incomeClock += delta;
-
-    if (this.incomeClock >= 1) {
-      this.applyIncome(this.player, this.incomeClock);
-      this.applyIncome(this.opponent, this.incomeClock);
-      this.incomeClock %= 1;
-    }
-
-    if (this.aiClock >= GAMEPLAY_CONFIG.ai.thinkIntervalSeconds) {
-      this.aiClock = 0;
-      this.runAi();
-    }
-
+    this.applyIncome(this.player, delta);
     if (this.interWaveTime > 0) {
       this.interWaveTime -= delta;
       if (this.interWaveTime <= 0) this.startNextWave();
       return;
     }
 
-    this.waveTime -= delta;
-    this.damagePressure(this.player, delta);
-    this.damagePressure(this.opponent, delta);
+    this.spawnClock += delta;
+    while (this.spawnQueue.length && this.spawnClock >= GAMEPLAY_CONFIG.battle.spawnIntervalSeconds) {
+      this.spawnClock -= GAMEPLAY_CONFIG.battle.spawnIntervalSeconds;
+      this.spawnEnemy(this.spawnQueue.shift());
+    }
+
+    this.updateEnemies(delta);
+    this.updateGenerals(delta);
+    this.enemies = this.enemies.filter((enemy) => !enemy.dead && !enemy.reachedEnd);
     this.maxPower = Math.max(this.maxPower, sidePower(this.player));
 
-    const playerCleared = this.player.pressureHp <= 0;
-    const opponentCleared = this.opponent.pressureHp <= 0;
-    if (playerCleared && opponentCleared) this.completeWave();
-    else if (this.waveTime <= 0) this.completeWave();
+    if (!this.spawnQueue.length && !this.enemies.length && !this.over) this.completeWave();
   }
 
-  applyIncome(side, elapsed) {
+  applyIncome(side, delta) {
     const farmers = [...side.board, ...side.reserve].filter((unit) => unit?.kind === 'farmer');
-    side.farmerClock += elapsed;
+    side.farmerClock += delta;
     if (farmers.length && side.farmerClock >= GAMEPLAY_CONFIG.economy.farmerIntervalSeconds) {
       side.farmerClock %= GAMEPLAY_CONFIG.economy.farmerIntervalSeconds;
-      side.buns += farmers.reduce((sum, unit) => sum + unit.level * GAMEPLAY_CONFIG.economy.farmerBunsPerLevel, 0);
-      side.lastAction = '农民产出馒头';
+      const income = farmers.reduce((sum, unit) => sum + unit.level * GAMEPLAY_CONFIG.economy.farmerBunsPerLevel, 0);
+      side.buns += income;
+      side.lastAction = `农民送来馒头 +${income}`;
     }
   }
 
-  damagePressure(side, delta) {
-    if (side.pressureHp <= 0) return;
-    const power = sidePower(side, this.enemy.id);
-    const equippedBonus = side.equippedWeapons
-      .map((id) => WEAPONS.find((weapon) => weapon.id === id)?.attackBonus || 0)
-      .reduce((sum, bonus) => sum + bonus, 0);
-    side.pressureHp -= power * (1 + equippedBonus + side.hasteBonus) * delta;
+  spawnEnemy(typeId) {
+    const type = ENEMIES.find((entry) => entry.id === typeId) || ENEMIES[0];
+    const bossName = this.map.bossWaves?.[this.wave];
+    const boss = type.id === 'enemy_boss';
+    const growth = 1 + this.wave * 0.15;
+    const maxHp = Math.round(type.baseHp * growth * (boss ? 1 + this.wave * 0.025 : 1));
+    this.enemySerial += 1;
+    this.enemies.push({
+      id: `enemy_${this.enemySerial}`,
+      typeId: type.id,
+      char: type.char,
+      name: bossName && boss ? bossName : type.name,
+      boss,
+      hp: maxHp,
+      maxHp,
+      speed: type.speed,
+      damage: type.damage,
+      goldReward: type.goldReward,
+      progress: 0,
+      slowRemaining: 0,
+      stunRemaining: 0,
+      hitFlash: 0,
+      dead: false,
+      reachedEnd: false,
+    });
+  }
+
+  updateEnemies(delta) {
+    const pathEnd = this.map.path.length - 1;
+    for (const enemy of this.enemies) {
+      if (enemy.dead || enemy.reachedEnd) continue;
+      enemy.hitFlash = Math.max(0, enemy.hitFlash - delta);
+      enemy.slowRemaining = Math.max(0, enemy.slowRemaining - delta);
+      enemy.stunRemaining = Math.max(0, enemy.stunRemaining - delta);
+      if (enemy.stunRemaining > 0) continue;
+      const slow = enemy.slowRemaining > 0 ? 0.5 : 1;
+      enemy.progress += enemy.speed * slow * delta;
+      if (enemy.progress >= pathEnd) this.enemyReachedEnd(enemy);
+    }
+  }
+
+  updateGenerals(delta) {
+    for (let slot = 0; slot < this.player.unlocked; slot += 1) {
+      const unit = this.player.board[slot];
+      if (!unit || unit.kind === 'farmer' || unit.kind === 'fragment') continue;
+      unit.attackClock = Math.max(0, (unit.attackClock || 0) - delta);
+      if (unit.attackClock > 0) continue;
+      const combat = unitCombat(unit, this.player);
+      const target = this.findTarget(slot, combat.range);
+      if (!target) continue;
+      this.performAttack(unit, target, combat, slot);
+      unit.attackClock = 1 / Math.max(0.1, combat.attackSpeed);
+    }
+  }
+
+  findTarget(slot, range) {
+    const origin = this.map.slots[slot];
+    return this.enemies
+      .filter((enemy) => !enemy.dead && !enemy.reachedEnd && gridDistance(origin, positionAtProgress(this.map.path, enemy.progress)) <= range)
+      .sort((a, b) => b.progress - a.progress)[0] || null;
+  }
+
+  performAttack(unit, target, combat, slot) {
+    unit.attackCount = (unit.attackCount || 0) + 1;
+    const weapon = equippedWeaponFor(unit, this.player.equippedWeapons);
+    const enemyType = ENEMIES.find((entry) => entry.id === target.typeId);
+    let damage = combat.attack;
+    if (enemyType?.counteredBy.includes(combat.classId)) damage *= 1.35;
+    if (weapon) damage *= 1 + weapon.attackBonus;
+
+    const firstHit = !unit.firstTargets?.includes(target.id);
+    if (!unit.firstTargets) unit.firstTargets = [];
+    if (firstHit) unit.firstTargets.push(target.id);
+
+    if (weapon?.id === 'weapon_luori') {
+      const distance = gridDistance(this.map.slots[slot], positionAtProgress(this.map.path, target.progress));
+      damage *= 1 + distance * 0.2;
+    }
+    if (weapon?.id === 'weapon_diangang' && firstHit && this.rng.next() < 0.2) {
+      damage *= 3;
+      target.stunRemaining = Math.max(target.stunRemaining, 0.5);
+      this.lastEvent = '点钢枪破甲，敌军眩晕';
+    }
+    if (weapon?.id === 'weapon_guding' && firstHit) this.player.buns += 1;
+
+    this.applyDamage(target, damage, unit, weapon);
+
+    if (unit.soldierId === 'cavalry') {
+      this.damageNearProgress(target.progress, damage * 0.45, 0.85, target.id);
+    } else if (unit.soldierId === 'spear') {
+      this.damageNearProgress(target.progress, damage * 0.35, 1.15, target.id);
+    }
+
+    if (unit.kind === 'general' && unit.attackCount % 10 === 0) this.triggerGeneralSkill(unit, damage);
+    if (weapon?.id === 'weapon_longdan' && unit.generalId === 'general_zhaoyun' && this.rng.next() < 0.15) {
+      for (const enemy of this.enemies) this.applyDamage(enemy, damage * 2.2);
+      this.lastEvent = '龙胆亮银枪召来漫天飞枪';
+    }
+  }
+
+  triggerGeneralSkill(unit, damage) {
+    if (unit.generalId === 'general_zhaoyun') {
+      for (const enemy of this.enemies) this.applyDamage(enemy, damage * 0.9);
+      this.lastEvent = '赵云发动七进七出';
+    } else if (unit.generalId === 'general_zhangfei') {
+      this.enemies.forEach((enemy) => { enemy.stunRemaining = Math.max(enemy.stunRemaining, 1.2); });
+      this.lastEvent = '张飞当阳大喝，震慑全场';
+    } else if (unit.generalId === 'general_huangzhong') {
+      for (const enemy of this.enemies) this.applyDamage(enemy, damage * 0.7);
+      this.lastEvent = '黄忠发动百步穿杨';
+    } else if (unit.generalId === 'general_liubei') {
+      this.player.hasteBonus += 0.08;
+      this.lastEvent = '刘备仁德激励全军';
+    } else {
+      const targets = [...this.enemies].filter((enemy) => !enemy.dead).sort((a, b) => b.progress - a.progress).slice(0, 3);
+      targets.forEach((enemy) => {
+        this.applyDamage(enemy, damage * 0.8);
+        enemy.stunRemaining = Math.max(enemy.stunRemaining, 0.45);
+      });
+      this.lastEvent = `${unit.char}发动武将技`;
+    }
+  }
+
+  applyDamage(enemy, amount, source = null, weapon = null) {
+    if (!enemy || enemy.dead || enemy.reachedEnd) return false;
+    enemy.hp -= Math.max(0, amount);
+    enemy.hitFlash = 0.12;
+    if (enemy.hp > 0) return false;
+    enemy.hp = 0;
+    enemy.dead = true;
+    this.player.buns += enemy.goldReward;
+    this.player.kills += 1;
+    if (weapon?.id === 'weapon_qinglong' && source?.generalId === 'general_guanyu') {
+      for (const other of this.enemies) this.applyDamage(other, amount * 0.55);
+      this.lastEvent = '青龙偃月刀释放刀气';
+    }
+    return true;
+  }
+
+  damageNearProgress(progress, damage, radius, excludedId = '') {
+    this.enemies
+      .filter((enemy) => enemy.id !== excludedId && Math.abs(enemy.progress - progress) <= radius)
+      .forEach((enemy) => this.applyDamage(enemy, damage));
+  }
+
+  enemyReachedEnd(enemy) {
+    enemy.reachedEnd = true;
+    if (this.player.meteorReady) {
+      this.player.meteorReady = false;
+      this.lastEvent = '陨石替阿斗挡下破阵一击';
+      return;
+    }
+    this.player.adouHp = Math.max(0, this.player.adouHp - enemy.damage);
+    this.lastEvent = `${enemy.name}突破防线，阿斗失去 ${enemy.damage} 点生命`;
+    if (this.player.adouHp <= 0) this.finish(false);
   }
 
   completeWave() {
-    const playerFailed = this.player.pressureHp > 0;
-    const opponentFailed = this.opponent.pressureHp > 0;
-    if (!playerFailed) rewardClear(this.player, this.wave);
-    if (!opponentFailed) rewardClear(this.opponent, this.wave);
-    if (playerFailed) damageAdou(this.player);
-    if (opponentFailed) damageAdou(this.opponent);
-    if (this.player.adouHp <= 0 || this.opponent.adouHp <= 0) {
-      this.finish(this.opponent.adouHp <= 0 && this.player.adouHp > 0);
+    this.clearedWaves = this.wave;
+    rewardClear(this.player, this.wave);
+    if (this.wave >= GAMEPLAY_CONFIG.battle.maxWaves) {
+      this.finish(true);
       return;
     }
-    this.clearedWaves += playerFailed ? 0 : 1;
-    this.lastEvent = playerFailed ? '敌军突破我方防线' : opponentFailed ? '对手防线失守' : '双方均守住本波';
-    this.wave += 1;
+    this.lastEvent = `第 ${this.wave} 波已肃清，援军正在集结`;
     this.interWaveTime = GAMEPLAY_CONFIG.battle.interWaveSeconds;
   }
 
   startNextWave() {
-    this.waveTime = GAMEPLAY_CONFIG.battle.waveSeconds;
-    this.enemy = createEnemyState(this.wave, this.map);
-    this.player.pressureHp = this.enemy.maxHp;
-    this.player.pressureMaxHp = this.enemy.maxHp;
-    this.opponent.pressureHp = this.enemy.maxHp;
-    this.opponent.pressureMaxHp = this.enemy.maxHp;
-    this.lastEvent = `第 ${this.wave} 波来袭`;
+    this.wave += 1;
+    this.spawnQueue = createWaveQueue(this.wave, this.rng);
+    this.spawnClock = GAMEPLAY_CONFIG.battle.spawnIntervalSeconds;
     this.interWaveTime = 0;
-  }
-
-  runAi() {
-    const side = this.opponent;
-    const pair = findMerge(side);
-    if (pair && this.rng.next() < GAMEPLAY_CONFIG.ai.mergeChance) {
-      this.executeCommand('opponent', { type: 'Move', from: pair[0], to: pair[1] });
-      return;
-    }
-    const reserveIndex = side.reserve.findIndex(Boolean);
-    const emptyBoard = side.board.findIndex((unit, index) => index < side.unlocked && !unit);
-    if (reserveIndex !== -1 && emptyBoard !== -1) {
-      this.executeCommand('opponent', { type: 'Deploy', from: reserveIndex, to: emptyBoard });
-      return;
-    }
-    if (side.reserve.filter(Boolean).length >= side.reserve.length - GAMEPLAY_CONFIG.ai.openLandThreshold && side.buns >= currentLandCost(side)) {
-      if (this.executeCommand('opponent', { type: 'OpenLand' }).ok) return;
-    }
-    if (side.buns >= currentRecruitCost(side) && side.reserve.some((unit) => !unit)) {
-      side.buns += currentRecruitCost(side) * (GAMEPLAY_CONFIG.ai.recruitResourceMultiplier - 1);
-      this.executeCommand('opponent', { type: 'Recruit' });
-    }
+    this.lastEvent = `第 ${this.wave} 波敌军来袭`;
   }
 
   finish(victory) {
+    if (this.over) return;
     this.over = true;
     this.victory = victory;
+    const stars = victory ? calculateStars(this.player.adouHp, this.player.maxAdouHp) : 0;
     const baseCoins = (victory ? GAMEPLAY_CONFIG.result.winCoins : GAMEPLAY_CONFIG.result.loseCoins)
       + this.clearedWaves * GAMEPLAY_CONFIG.result.coinsPerClearedWave;
     this.result = {
       sessionId: this.sessionId,
       victory,
+      stars,
+      adouHp: this.player.adouHp,
       clearedWaves: this.clearedWaves,
       maxPower: Math.round(this.maxPower),
+      kills: this.player.kills,
       baseCoins,
     };
   }
@@ -316,13 +435,13 @@ export class BattleSession {
       seed: this.seed,
       map: this.map,
       wave: this.wave,
-      waveTime: this.waveTime,
+      maxWaves: GAMEPLAY_CONFIG.battle.maxWaves,
       paused: this.paused,
       over: this.over,
+      interWaveTime: this.interWaveTime,
+      queuedEnemies: this.spawnQueue.length,
       player: cloneSide(this.player),
-      opponent: cloneSide(this.opponent),
-      enemy: { ...this.enemy },
-      profile: { ...this.profile },
+      enemies: this.enemies.filter((enemy) => !enemy.dead && !enemy.reachedEnd).map((enemy) => ({ ...enemy })),
       result: this.result ? { ...this.result } : null,
       lastEvent: this.lastEvent,
     };
@@ -330,25 +449,46 @@ export class BattleSession {
 }
 
 const EFFECT_HANDLERS = {
+  life_bun({ session, side, rng }) {
+    if (rng.next() < 0.55) {
+      side.adouHp = Math.min(side.maxAdouHp, side.adouHp + 1);
+      return { ok: true, message: '包子生效，阿斗续命成功' };
+    }
+    side.adouHp = Math.max(0, side.adouHp - 1);
+    return { ok: true, message: '包子失效，阿斗失去一命' };
+  },
+  trap_path({ session }) {
+    session.enemies.forEach((enemy) => { enemy.stunRemaining = Math.max(enemy.stunRemaining, 3); });
+    return { ok: true, message: '陷阱发动，敌军停滞 3 秒' };
+  },
+  slow_wave({ session }) {
+    session.enemies.forEach((enemy) => { enemy.slowRemaining = Math.max(enemy.slowRemaining, 5); });
+    return { ok: true, message: '墨汁泼洒，敌军减速 5 秒' };
+  },
+  team_range({ side }) {
+    side.rangeMultiplier = 2;
+    return { ok: true, message: '御敌千里生效，远程射程翻倍' };
+  },
   upgrade_unit({ side, target }) {
     const unit = resolveTarget(side, target);
-    if (!unit || unit.level >= GAMEPLAY_CONFIG.battle.maxUnitLevel) return { ok: false, reason: 'invalid_target' };
+    if (!unit || unit.kind === 'fragment' || unit.level >= GAMEPLAY_CONFIG.battle.maxUnitLevel) return { ok: false, reason: 'invalid_target' };
     unit.level += 1;
-    return { ok: true, message: `${unit.char || unit.name}提升一级` };
+    return { ok: true, message: `${unit.char}提升一级` };
   },
   train_unit({ side, target, rng }) {
     const unit = resolveTarget(side, target);
-    if (!unit) return { ok: false, reason: 'invalid_target' };
+    if (!unit || unit.kind === 'fragment') return { ok: false, reason: 'invalid_target' };
     unit.level = Math.max(1, Math.min(GAMEPLAY_CONFIG.battle.maxUnitLevel, unit.level + (rng.next() > 0.35 ? 1 : -1)));
     return { ok: true, message: '练兵完成' };
   },
-  damage_wave({ side }) {
-    side.pressureHp = Math.max(0, side.pressureHp - side.pressureMaxHp * 0.42);
-    return { ok: true, message: '地雷重创敌军' };
+  damage_wave({ session }) {
+    const damage = 115 + session.wave * 18;
+    session.enemies.forEach((enemy) => session.applyDamage(enemy, damage));
+    return { ok: true, message: `地雷爆炸，敌军受到 ${damage} 点伤害` };
   },
   team_haste({ side }) {
-    side.hasteBonus += 0.2;
-    return { ok: true, message: '全军攻速提升' };
+    side.hasteBonus += 0.4;
+    return { ok: true, message: '全军攻速提升 40%' };
   },
   reroll_character({ side, target, rng }) {
     const unit = resolveTarget(side, target);
@@ -370,22 +510,22 @@ function createSide(id, loadout, equippedWeapons, rng) {
     reserve: Array(GAMEPLAY_CONFIG.battle.reserveSlots).fill(null),
     adouHp: GAMEPLAY_CONFIG.battle.initialAdouHp + extraLife,
     maxAdouHp: GAMEPLAY_CONFIG.battle.initialAdouHp + extraLife,
-    pressureHp: 1,
-    pressureMaxHp: 1,
     activeItems: [...loadout.active],
     passiveItems: [...loadout.passive],
     usedItems: [],
     equippedWeapons: [...equippedWeapons],
     hasteBonus: 0,
+    rangeMultiplier: 1,
     farmerClock: 0,
     meteorReady: loadout.passive.includes('item_meteor'),
     freeLand: loadout.passive.includes('item_shovel'),
     generalChanceBonus: loadout.passive.includes('item_recruit') ? 7 : 0,
     gallery: [],
+    kills: 0,
     lastAction: '等待部署',
     pool: createRecruitmentPool(),
   };
-  if (loadout.passive.includes('item_farmer')) side.reserve[0] = createSoldier('farmer');
+  if (loadout.passive.includes('item_farmer')) side.reserve[0] = createSoldier('farmer', rng);
   side.buns += Math.floor(rng.next() * 3);
   return side;
 }
@@ -408,7 +548,7 @@ function recruit(side, rng) {
   if (remainingChars.length && rng.next() < generalChance) {
     const char = rng.pick(remainingChars)[0];
     side.pool[char] -= 1;
-    unit = { id: tokenId(rng), kind: 'fragment', char, level: 1, exp: 0 };
+    unit = { id: tokenId(rng), kind: 'fragment', char, level: 1, exp: 0, attackClock: 0, attackCount: 0, firstTargets: [] };
   } else {
     const soldierId = rng.weighted(Object.entries(GAMEPLAY_CONFIG.recruitment.baseWeights).map(([value, weight]) => ({ value, weight })));
     unit = createSoldier(soldierId, rng);
@@ -420,16 +560,58 @@ function recruit(side, rng) {
 
 function createSoldier(soldierId, rng = new SeededRng(1)) {
   const soldier = SOLDIERS[soldierId];
-  return { id: tokenId(rng), kind: soldierId === 'farmer' ? 'farmer' : 'soldier', soldierId, char: soldier.char, level: 1, exp: 0 };
+  return { id: tokenId(rng), kind: soldierId === 'farmer' ? 'farmer' : 'soldier', soldierId, char: soldier.char, level: 1, exp: 0, attackClock: 0, attackCount: 0, firstTargets: [] };
 }
 
 function deploy(side, from, to) {
   if (!Number.isInteger(from) || !Number.isInteger(to) || from < 0 || from >= side.reserve.length || to < 0 || to >= side.unlocked) return { ok: false, reason: 'invalid_cell' };
-  if (!side.reserve[from] || side.board[to]) return { ok: false, reason: 'occupied' };
-  side.board[to] = side.reserve[from];
+  const source = side.reserve[from];
+  const target = side.board[to];
+  if (!source) return { ok: false, reason: 'empty_source' };
+  if (target) {
+    const general = resolveGeneral(source, target);
+    if (general) {
+      side.board[to] = createGeneral(general, Math.max(source.level, target.level));
+      side.reserve[from] = null;
+      if (!side.gallery.includes(general.id)) side.gallery.push(general.id);
+      side.lastAction = `${general.name}出阵`;
+      return { ok: true, action: 'general', general };
+    }
+    const sameUnit = source.kind === target.kind && source.char === target.char && source.level === target.level;
+    if (sameUnit && source.kind !== 'fragment' && target.level < GAMEPLAY_CONFIG.battle.maxUnitLevel) {
+      const third = findThirdCopy(side, source, new Set([source.id, target.id]));
+      if (!third) return { ok: false, reason: 'need_third_copy' };
+      target.level += 1;
+      target.attackClock = 0;
+      side.reserve[from] = null;
+      third.collection[third.index] = null;
+      side.lastAction = `三合一：${target.char}升至 ${target.level} 级`;
+      return { ok: true, action: 'merge', unit: target };
+    }
+    return { ok: false, reason: 'occupied' };
+  }
+  side.board[to] = source;
   side.reserve[from] = null;
   side.lastAction = '单位部署';
-  return { ok: true };
+  return { ok: true, action: 'deploy' };
+}
+
+function bench(side, from, to) {
+  if (!Number.isInteger(from) || !Number.isInteger(to) || from < 0 || from >= side.unlocked || to < 0 || to >= side.reserve.length) return { ok: false, reason: 'invalid_cell' };
+  if (!side.board[from] || side.reserve[to]) return { ok: false, reason: 'occupied' };
+  side.reserve[to] = side.board[from];
+  side.board[from] = null;
+  side.lastAction = '单位退回备战席';
+  return { ok: true, action: 'bench' };
+}
+
+function moveReserve(side, from, to) {
+  if (!Number.isInteger(from) || !Number.isInteger(to) || from === to || from < 0 || from >= side.reserve.length || to < 0 || to >= side.reserve.length) return { ok: false, reason: 'invalid_cell' };
+  if (!side.reserve[from] || side.reserve[to]) return { ok: false, reason: 'occupied' };
+  side.reserve[to] = side.reserve[from];
+  side.reserve[from] = null;
+  side.lastAction = '调整备战席';
+  return { ok: true, action: 'move' };
 }
 
 function moveOrMerge(side, from, to) {
@@ -445,7 +627,7 @@ function moveOrMerge(side, from, to) {
   }
   const general = resolveGeneral(source, target);
   if (general) {
-    side.board[to] = createGeneral(general, source.level);
+    side.board[to] = createGeneral(general, Math.max(source.level, target.level));
     side.board[from] = null;
     if (!side.gallery.includes(general.id)) side.gallery.push(general.id);
     side.lastAction = `${general.name}出阵`;
@@ -453,12 +635,28 @@ function moveOrMerge(side, from, to) {
   }
   const sameUnit = source.kind === target.kind && source.char === target.char && source.level === target.level;
   if (sameUnit && source.kind !== 'fragment' && target.level < GAMEPLAY_CONFIG.battle.maxUnitLevel) {
+    const third = findThirdCopy(side, source, new Set([source.id, target.id]));
+    if (!third) return { ok: false, reason: 'need_third_copy' };
     target.level += 1;
+    target.attackClock = 0;
     side.board[from] = null;
-    side.lastAction = `${target.char}升至 ${target.level} 级`;
+    third.collection[third.index] = null;
+    side.lastAction = `三合一：${target.char}升至 ${target.level} 级`;
     return { ok: true, action: 'merge', unit: target };
   }
   return { ok: false, reason: 'illegal_merge' };
+}
+
+function findThirdCopy(side, sample, excludedIds) {
+  for (const collection of [side.board, side.reserve]) {
+    const index = collection.findIndex((unit) => unit
+      && !excludedIds.has(unit.id)
+      && unit.kind === sample.kind
+      && unit.char === sample.char
+      && unit.level === sample.level);
+    if (index !== -1) return { collection, index };
+  }
+  return null;
 }
 
 function resolveGeneral(first, second) {
@@ -467,7 +665,7 @@ function resolveGeneral(first, second) {
 }
 
 function createGeneral(general, level = 1) {
-  return { id: `${general.id}_${Date.now().toString(36)}`, kind: 'general', generalId: general.id, char: general.name, level: Math.min(level, GAMEPLAY_CONFIG.battle.maxGeneralLevel), exp: 0 };
+  return { id: `${general.id}_${Date.now().toString(36)}`, kind: 'general', generalId: general.id, char: general.name, level: Math.min(level, GAMEPLAY_CONFIG.battle.maxGeneralLevel), exp: 0, attackClock: 0, attackCount: 0, firstTargets: [] };
 }
 
 function openLand(side) {
@@ -503,29 +701,54 @@ function findMerge(side) {
       const b = side.board[second];
       if (!a || !b) continue;
       if (resolveGeneral(a, b)) return [first, second];
-      if (a.kind === b.kind && a.kind !== 'fragment' && a.char === b.char && a.level === b.level && a.level < GAMEPLAY_CONFIG.battle.maxUnitLevel) return [first, second];
+      const same = a.kind === b.kind && a.kind !== 'fragment' && a.char === b.char && a.level === b.level && a.level < GAMEPLAY_CONFIG.battle.maxUnitLevel;
+      if (same && findThirdCopy(side, a, new Set([a.id, b.id]))) return [first, second];
     }
   }
   return null;
 }
 
-function sidePower(side, enemyId = null) {
-  const enemy = ENEMIES.find((entry) => entry.id === enemyId);
+function unitCombat(unit, side) {
+  if (unit.kind === 'general') {
+    const general = GENERALS.find((entry) => entry.id === unit.generalId);
+    const baseClass = SOLDIERS[general.classId];
+    const ranged = general.classId === 'bow' || ['general_zhaoyun', 'general_machao', 'general_huangzu'].includes(general.id);
+    return {
+      classId: general.classId,
+      attack: general.attack * (1 + (unit.level - 1) * 0.3),
+      attackSpeed: (baseClass.attackSpeed + 0.08) * (1 + side.hasteBonus),
+      range: (ranged ? Math.max(2.5, baseClass.range) : baseClass.range) * (ranged ? side.rangeMultiplier : 1),
+    };
+  }
+  const soldier = SOLDIERS[unit.soldierId];
+  return {
+    classId: soldier.id,
+    attack: soldier.attack * 1.65 ** (unit.level - 1),
+    attackSpeed: soldier.attackSpeed * (1 + side.hasteBonus),
+    range: soldier.range * (soldier.range >= 2.5 ? side.rangeMultiplier : 1),
+  };
+}
+
+function equippedWeaponFor(unit, weaponIds) {
+  const general = unit.kind === 'general' ? GENERALS.find((entry) => entry.id === unit.generalId) : null;
+  const classId = general?.classId || unit.soldierId;
+  const available = weaponIds.map((id) => WEAPONS.find((weapon) => weapon.id === id)).filter(Boolean);
+  return available.find((weapon) => weapon.generalId && weapon.generalId === unit.generalId)
+    || available.find((weapon) => !weapon.generalId && weapon.classId === classId)
+    || null;
+}
+
+function sidePower(side) {
   return side.board.reduce((sum, unit) => {
-    if (!unit) return sum;
-    if (unit.kind === 'farmer' || unit.kind === 'fragment') return sum;
-    if (unit.kind === 'general') {
-      const general = GENERALS.find((entry) => entry.id === unit.generalId);
-      return sum + general.attack * (1 + (unit.level - 1) * 0.72);
-    }
-    const soldier = SOLDIERS[unit.soldierId];
-    const counter = enemy?.counteredBy.includes(unit.soldierId) ? 1.35 : 1;
-    return sum + soldier.attack * 2 ** (unit.level - 1) * counter;
+    if (!unit || unit.kind === 'farmer' || unit.kind === 'fragment') return sum;
+    const combat = unitCombat(unit, side);
+    const weapon = equippedWeaponFor(unit, side.equippedWeapons);
+    return sum + combat.attack * combat.attackSpeed * (1 + (weapon?.attackBonus || 0));
   }, 0);
 }
 
 function rewardClear(side, wave) {
-  side.buns += 8 + wave * 2;
+  side.buns += 10 + wave * 2;
   side.board.filter((unit) => unit?.kind === 'general').forEach((unit) => {
     unit.exp += 5 + wave;
     const needed = GAMEPLAY_CONFIG.battle.generalExpCurve[unit.level] ?? Infinity;
@@ -536,41 +759,43 @@ function rewardClear(side, wave) {
   });
 }
 
-function damageAdou(side) {
-  if (side.meteorReady) {
-    side.meteorReady = false;
-    side.lastAction = '陨石抵挡破阵';
-    return;
-  }
-  side.adouHp -= 1;
-}
-
-function createEnemyState(wave, map = MAPS[0]) {
-  const enemy = ENEMIES[(wave - 1) % ENEMIES.length];
-  const bossName = map?.bossWaves?.[wave];
-  const maxHp = Math.round((enemy.baseHp + wave * 25) * GAMEPLAY_CONFIG.battle.waveHpGrowth ** (wave - 1) * (bossName ? 2.4 : 1));
-  return { ...enemy, name: bossName || enemy.name, boss: Boolean(bossName), maxHp };
-}
-
-function createAiProfile(rng) {
-  const names = ['北地孤枪', '折柳', '子龙旧部', '汉水夜雨', '常山客'];
-  const tierIndex = Math.floor(rng.next() * Math.min(3, RANKS.length));
-  return {
-    name: rng.pick(names),
-    rank: RANKS[tierIndex].name,
-    winRate: `${Math.round(42 + rng.next() * 31)}.${Math.floor(rng.next() * 10)}%`,
-    avatar: rng.pick(['云', '汉', '常', '龙']),
+function createWaveQueue(wave, rng) {
+  const fixed = {
+    1: ['enemy_soldier', 'enemy_soldier', 'enemy_soldier'],
+    2: ['enemy_soldier', 'enemy_soldier', 'enemy_soldier', 'enemy_soldier', 'enemy_soldier'],
+    3: ['enemy_soldier', 'enemy_soldier', 'enemy_archer', 'enemy_archer'],
+    5: ['enemy_cavalry', 'enemy_cavalry', 'enemy_soldier', 'enemy_soldier'],
+    10: ['enemy_tank', 'enemy_tank', 'enemy_soldier', 'enemy_soldier', 'enemy_archer'],
+    15: ['enemy_boss', 'enemy_tank', 'enemy_soldier', 'enemy_soldier'],
+    20: ['enemy_boss', 'enemy_boss', 'enemy_tank', 'enemy_tank'],
   };
+  if (fixed[wave]) return [...fixed[wave]];
+  const count = Math.min(12, 3 + Math.floor(wave / 2));
+  return Array.from({ length: count }, () => rng.weighted([
+    { value: 'enemy_soldier', weight: Math.max(26, 58 - wave * 1.5) },
+    { value: 'enemy_archer', weight: 22 },
+    { value: 'enemy_cavalry', weight: 10 + wave * 0.55 },
+    { value: 'enemy_tank', weight: Math.max(1, wave - 4) },
+  ]));
 }
 
-function makeAiLoadout(rng) {
-  const active = ITEMS.filter((item) => item.type === 'active').sort(() => rng.next() - 0.5).slice(0, 1).map((item) => item.id);
-  const passive = ITEMS.filter((item) => item.type === 'passive').sort(() => rng.next() - 0.5).slice(0, 2).map((item) => item.id);
-  return { active, passive };
+function positionAtProgress(path, progress) {
+  const index = Math.min(path.length - 1, Math.max(0, Math.floor(progress)));
+  const nextIndex = Math.min(path.length - 1, index + 1);
+  const amount = Math.max(0, Math.min(1, progress - index));
+  const current = path[index];
+  const next = path[nextIndex];
+  return [current[0] + (next[0] - current[0]) * amount, current[1] + (next[1] - current[1]) * amount];
 }
 
-function pickAiWeapons(rng) {
-  return [rng.pick(WEAPONS).id];
+function gridDistance(first, second) {
+  return Math.hypot(first[0] - second[0], first[1] - second[1]);
+}
+
+function calculateStars(adouHp, maxAdouHp) {
+  if (adouHp >= maxAdouHp) return 3;
+  if (adouHp >= maxAdouHp / 2) return 2;
+  return 1;
 }
 
 function resolveTarget(side, target) {
@@ -606,8 +831,8 @@ function applyStars(rank, delta) {
 function cloneSide(side) {
   return {
     ...side,
-    board: side.board.map((unit) => unit ? { ...unit } : null),
-    reserve: side.reserve.map((unit) => unit ? { ...unit } : null),
+    board: side.board.map((unit) => unit ? { ...unit, firstTargets: [...(unit.firstTargets || [])] } : null),
+    reserve: side.reserve.map((unit) => unit ? { ...unit, firstTargets: [...(unit.firstTargets || [])] } : null),
     pool: { ...side.pool },
     gallery: [...side.gallery],
     usedItems: [...side.usedItems],
@@ -634,5 +859,7 @@ export const GameRules = Object.freeze({
   findMerge,
   sidePower,
   resolveGeneral,
+  positionAtProgress,
+  calculateStars,
   applyStars,
 });

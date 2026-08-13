@@ -25,14 +25,25 @@ test('full reserve blocks recruit without spending buns', () => {
   assert.equal(session.player.buns, before);
 });
 
-test('same units merge into exactly one higher level unit', () => {
+test('three same-level units merge into exactly one higher level unit', () => {
   const session = new BattleSession({ seed: 12 });
   session.player.board[0] = { id: 'a', kind: 'soldier', soldierId: 'sword', char: '刀', level: 1, exp: 0 };
   session.player.board[1] = { id: 'b', kind: 'soldier', soldierId: 'sword', char: '刀', level: 1, exp: 0 };
+  session.player.reserve[0] = { id: 'c', kind: 'soldier', soldierId: 'sword', char: '刀', level: 1, exp: 0 };
   const result = session.executeCommand('player', { type: 'Move', from: 0, to: 1 });
   assert.equal(result.action, 'merge');
   assert.equal(session.player.board.filter(Boolean).length, 1);
+  assert.equal(session.player.reserve.filter(Boolean).length, 0);
   assert.equal(session.player.board[1].level, 2);
+});
+
+test('two copies cannot merge before a third copy is available', () => {
+  const session = new BattleSession({ seed: 120 });
+  session.player.board[0] = { id: 'a', kind: 'soldier', soldierId: 'sword', char: '刀', level: 1, exp: 0 };
+  session.player.board[1] = { id: 'b', kind: 'soldier', soldierId: 'sword', char: '刀', level: 1, exp: 0 };
+  const result = session.executeCommand('player', { type: 'Move', from: 0, to: 1 });
+  assert.equal(result.ok, false);
+  assert.equal(result.reason, 'need_third_copy');
 });
 
 test('valid recipe creates Zhao Yun and invalid recipe is rejected', () => {
@@ -86,9 +97,8 @@ test('pause freezes battle clocks and both sides', () => {
   session.setPaused(true);
   session.tick(10);
   const after = session.snapshot();
-  assert.equal(after.waveTime, before.waveTime);
+  assert.equal(after.enemies.length, before.enemies.length);
   assert.equal(after.player.buns, before.player.buns);
-  assert.equal(after.opponent.buns, before.opponent.buns);
   assert.deepEqual(after.player.board, before.player.board);
 });
 
@@ -113,8 +123,36 @@ test('daily items reset while permanent weapons remain', () => {
   const weapons = [...firstDay.ownedWeapons];
   service.save(firstDay);
   const nextDay = service.load(new Date('2026-08-13T08:00:00'));
-  assert.deepEqual(nextDay.daily.ownedItems, []);
+  assert.deepEqual(nextDay.daily.ownedItems, ['item_mine', 'item_trap', 'item_haste']);
   assert.deepEqual(nextDay.ownedWeapons, weapons);
+});
+
+test('enemies move on the map path and damage Adou at the end', () => {
+  const session = new BattleSession({ seed: 151 });
+  const initialHp = session.player.adouHp;
+  for (let step = 0; step < 400 && session.player.adouHp === initialHp; step += 1) session.tick(0.1);
+  assert.equal(session.player.adouHp < initialHp, true);
+});
+
+test('a deployed ranged unit automatically damages enemies in range', () => {
+  const session = new BattleSession({ seed: 152 });
+  session.player.board[0] = { id: 'bow', kind: 'soldier', soldierId: 'bow', char: '弓', level: 5, exp: 0, attackClock: 0, attackCount: 0, firstTargets: [] };
+  for (let step = 0; step < 100; step += 1) {
+    session.tick(0.1);
+  }
+  assert.equal(session.player.board[0].attackCount > 0, true);
+  assert.equal(session.player.kills > 0, true);
+});
+
+test('twenty cleared waves award stars from remaining Adou health', () => {
+  const session = new BattleSession({ seed: 153 });
+  session.player.adouHp = session.player.maxAdouHp;
+  session.wave = GAMEPLAY_CONFIG.battle.maxWaves;
+  session.enemies = [];
+  session.spawnQueue = [];
+  session.completeWave();
+  assert.equal(session.result.victory, true);
+  assert.equal(session.result.stars, 3);
 });
 
 test('battle simulation reaches a result without NaN or deadlock', () => {
