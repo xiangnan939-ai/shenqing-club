@@ -23,9 +23,7 @@ const pageOpeners = document.querySelectorAll('[data-open-page]');
 const pageClosers = document.querySelectorAll('[data-close-book]');
 
 let turnstileId = null;
-let turnstileToken = '';
 let turnstileSiteKey = '';
-let verificationTarget = 'register';
 const emailCodeTimers = new Map();
 
 function setMessage(element, text, tone = 'neutral') {
@@ -38,36 +36,17 @@ function setSubmitting(button, isSubmitting) {
 }
 
 function resetTurnstile() {
-  turnstileToken = '';
   if (window.turnstile && turnstileId !== null) {
     window.turnstile.reset(turnstileId);
   }
 }
 
-function getVerificationElements() {
-  if (verificationTarget === 'password-reset') {
-    return {
-      button: sendResetCode,
-      emailInput: recoveryEmail,
-      codeInput: document.querySelector('#recoveryEmailCode'),
-      message: recoveryMessage,
-    };
-  }
-  return {
-    button: sendEmailCode,
-    emailInput: registerEmail,
-    codeInput: document.querySelector('#registerEmailCode'),
-    message: registerMessage,
-  };
-}
-
 function closeVerificationModal({ keepButtonDisabled = false } = {}) {
-  const { button, emailInput } = getVerificationElements();
   verificationModal.hidden = true;
   bookStage.inert = false;
   resetTurnstile();
-  if (!keepButtonDisabled) setSubmitting(button, false);
-  emailInput.focus();
+  if (!keepButtonDisabled) setSubmitting(sendEmailCode, false);
+  registerEmail.focus();
 }
 
 function startEmailCodeCountdown(button, seconds) {
@@ -82,7 +61,7 @@ function startEmailCodeCountdown(button, seconds) {
       clearInterval(timer);
       emailCodeTimers.delete(button);
       button.disabled = false;
-      button.textContent = '重新发送';
+      button.textContent = '重新获取';
       return;
     }
     button.textContent = `${remaining} 秒后重发`;
@@ -113,12 +92,10 @@ async function renderTurnstile() {
     theme: 'light',
     size: window.matchMedia('(max-width: 420px)').matches ? 'compact' : 'flexible',
     callback(token) {
-      turnstileToken = token;
       requestVerificationCode(token);
     },
     'expired-callback': resetTurnstile,
     'error-callback': () => {
-      turnstileToken = '';
       setMessage(verificationMessage, '人机验证加载失败，请关闭后重试。', 'error');
     },
   });
@@ -133,13 +110,11 @@ function waitForTurnstile() {
   window.setTimeout(waitForTurnstile, 100);
 }
 
-function openVerificationModal(target) {
-  verificationTarget = target;
-  const { button } = getVerificationElements();
+function openVerificationModal() {
   setMessage(verificationMessage, '验证通过后将自动发送验证码');
   verificationModal.hidden = false;
   bookStage.inert = true;
-  setSubmitting(button, true);
+  setSubmitting(sendEmailCode, true);
   waitForTurnstile();
   document.querySelector('.verification-close').focus();
 }
@@ -261,37 +236,55 @@ registerForm.addEventListener('submit', async (event) => {
 });
 
 async function requestVerificationCode(token) {
-  const { button, emailInput, codeInput, message } = getVerificationElements();
-  const isPasswordReset = verificationTarget === 'password-reset';
   setMessage(verificationMessage, '验证通过，正在发送…');
   try {
-    const result = await sendAuthRequest(isPasswordReset ? '/api/password-reset-code' : '/api/email-code', {
-      username: isPasswordReset ? recoveryUsername.value.trim() : undefined,
-      email: emailInput.value.trim(),
+    const result = await sendAuthRequest('/api/email-code', {
+      email: registerEmail.value.trim(),
       turnstileToken: token,
     });
     closeVerificationModal({ keepButtonDisabled: true });
-    setMessage(message, '验证码已发送，10 分钟内有效。', 'success');
-    startEmailCodeCountdown(button, result.retryAfter);
-    codeInput.focus();
+    setMessage(registerMessage, '验证码已发送，10 分钟内有效。', 'success');
+    startEmailCodeCountdown(sendEmailCode, result.retryAfter);
+    document.querySelector('#registerEmailCode').focus();
   } catch (error) {
     closeVerificationModal({ keepButtonDisabled: Boolean(error.retryAfter) });
-    setMessage(message, error.message, 'error');
-    if (error.retryAfter) startEmailCodeCountdown(button, error.retryAfter);
+    setMessage(registerMessage, error.message, 'error');
+    if (error.retryAfter) startEmailCodeCountdown(sendEmailCode, error.retryAfter);
+  }
+}
+
+async function requestPasswordResetCode() {
+  setMessage(recoveryMessage, '');
+  setSubmitting(sendResetCode, true);
+  try {
+    const result = await sendAuthRequest('/api/password-reset-code', {
+      username: recoveryUsername.value.trim(),
+      email: recoveryEmail.value.trim(),
+    });
+    setMessage(recoveryMessage, '验证码已发送，10 分钟内有效。', 'success');
+    startEmailCodeCountdown(sendResetCode, result.retryAfter);
+    document.querySelector('#recoveryEmailCode').focus();
+  } catch (error) {
+    setMessage(recoveryMessage, error.message, 'error');
+    if (error.retryAfter) {
+      startEmailCodeCountdown(sendResetCode, error.retryAfter);
+    } else {
+      setSubmitting(sendResetCode, false);
+    }
   }
 }
 
 sendEmailCode.addEventListener('click', () => {
   setMessage(registerMessage, '');
   if (!registerEmail.reportValidity()) return;
-  openVerificationModal('register');
+  openVerificationModal();
 });
 
 sendResetCode.addEventListener('click', () => {
   setMessage(recoveryMessage, '');
   if (!recoveryUsername.reportValidity()) return;
   if (!recoveryEmail.reportValidity()) return;
-  openVerificationModal('password-reset');
+  requestPasswordResetCode();
 });
 
 verificationClosers.forEach((closer) => closer.addEventListener('click', () => closeVerificationModal()));

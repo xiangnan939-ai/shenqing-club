@@ -10,7 +10,7 @@ import {
   sendVerificationEmail,
   verificationWindow,
 } from '../_lib/email.js';
-import { isValidUsername, json, normalizeUsername, verifyTurnstile } from '../_lib/auth.js';
+import { isValidUsername, json, normalizeUsername } from '../_lib/auth.js';
 
 export async function onRequestPost(context) {
   let input;
@@ -22,7 +22,6 @@ export async function onRequestPost(context) {
 
   const username = normalizeUsername(input.username);
   const email = normalizeEmail(input.email);
-  const turnstileToken = String(input.turnstileToken || '');
   if (!isValidUsername(username)) {
     return json({ error: '请输入有效的账号。' }, 400);
   }
@@ -31,21 +30,6 @@ export async function onRequestPost(context) {
   }
   if (!context.env.EMAIL_CODE_SECRET) {
     return json({ error: '邮箱验证服务尚未配置。' }, 503);
-  }
-
-  const verification = await verifyTurnstile(
-    turnstileToken,
-    context.request,
-    context.env.TURNSTILE_SECRET_KEY,
-  );
-  if (!verification.success) {
-    const unavailable = verification.errorCodes.some((code) => [
-      'invalid-input-secret', 'missing-input-secret', 'siteverify-unavailable',
-    ].includes(code));
-    return json({
-      error: unavailable ? '人机验证服务暂时不可用。' : '请重新完成人机验证。',
-      resetTurnstile: true,
-    }, unavailable ? 503 : 400);
   }
 
   try {

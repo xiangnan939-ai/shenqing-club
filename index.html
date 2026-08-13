@@ -9,7 +9,7 @@
     <meta property="og:type" content="website">
     <title>深情俱乐部</title>
     <link rel="stylesheet" href="styles.css?v=8">
-    <script src="app.js?v=7" defer></script>
+    <script src="app.js?v=8" defer></script>
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" defer></script>
   </head>
   <body>
@@ -55,7 +55,7 @@
                     <span>邮箱验证码</span>
                     <input id="registerEmailCode" name="emailCode" type="text" inputmode="numeric" autocomplete="one-time-code" required minlength="6" maxlength="6" pattern="[0-9]{6}" placeholder="6 位数字">
                   </label>
-                  <button class="send-code-button" id="sendEmailCode" type="button">发送验证码</button>
+                  <button class="send-code-button" id="sendEmailCode" type="button">获取验证码</button>
                 </div>
 
                 <p class="form-message" id="registerMessage" aria-live="polite"></p>
@@ -101,7 +101,7 @@
                     <span>邮箱验证码</span>
                     <input id="recoveryEmailCode" name="emailCode" type="text" inputmode="numeric" autocomplete="one-time-code" required minlength="6" maxlength="6" pattern="[0-9]{6}" placeholder="6 位数字">
                   </label>
-                  <button class="send-code-button" id="sendResetCode" type="button">发送验证码</button>
+                  <button class="send-code-button" id="sendResetCode" type="button">获取验证码</button>
                 </div>
 
                 <p class="form-message" id="recoveryMessage" aria-live="polite"></p>
