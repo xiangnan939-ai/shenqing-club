@@ -10,7 +10,7 @@ import {
   sendVerificationEmail,
   verificationWindow,
 } from '../_lib/email.js';
-import { json, verifyTurnstile } from '../_lib/auth.js';
+import { isValidUsername, json, normalizeUsername, verifyTurnstile } from '../_lib/auth.js';
 
 export async function onRequestPost(context) {
   let input;
@@ -20,9 +20,15 @@ export async function onRequestPost(context) {
     return json({ error: '请求格式不正确。' }, 400);
   }
 
+  const username = normalizeUsername(input.username);
   const email = normalizeEmail(input.email);
   const turnstileToken = String(input.turnstileToken || '');
-  if (!isValidEmail(email)) return json({ error: '请输入有效的邮箱地址。' }, 400);
+  if (!isValidUsername(username)) {
+    return json({ error: '请输入有效的账号。' }, 400);
+  }
+  if (!isValidEmail(email)) {
+    return json({ error: '请输入有效的邮箱地址。' }, 400);
+  }
   if (!context.env.EMAIL_CODE_SECRET) {
     return json({ error: '邮箱验证服务尚未配置。' }, 503);
   }
@@ -43,13 +49,15 @@ export async function onRequestPost(context) {
   }
 
   try {
-    const existing = await context.env.DB.prepare(
-      'SELECT id FROM users WHERE email = ? LIMIT 1',
-    ).bind(email).first();
-    if (existing) return json({ error: '这个邮箱已经绑定账号。', resetTurnstile: true }, 409);
+    const user = await context.env.DB.prepare(
+      'SELECT id FROM users WHERE username = ? AND email = ? LIMIT 1',
+    ).bind(username, email).first();
+    if (!user) {
+      return json({ error: '账号与邮箱不匹配。', resetTurnstile: true }, 404);
+    }
 
     const ipHash = await hashRequestIp(context.request, context.env.EMAIL_CODE_SECRET);
-    const limit = await checkEmailSendLimits(context.env.DB, email, ipHash, 'register');
+    const limit = await checkEmailSendLimits(context.env.DB, email, ipHash, 'password-reset');
     if (!limit.allowed) {
       return json({
         error: limit.waitSeconds < 3600
@@ -71,7 +79,7 @@ export async function onRequestPost(context) {
       `INSERT INTO email_verification_requests
        (id, email, purpose, code_hash, code_salt, request_ip_hash, expires_at, created_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-    ).bind(id, email, 'register', codeHash, salt, ipHash, expiresAt, now.toISOString()).run();
+    ).bind(id, email, 'password-reset', codeHash, salt, ipHash, expiresAt, now.toISOString()).run();
 
     try {
       await sendVerificationEmail({
@@ -79,7 +87,7 @@ export async function onRequestPost(context) {
         from: context.env.EMAIL_FROM,
         email,
         code,
-        purpose: 'register',
+        purpose: 'password-reset',
       });
     } catch (error) {
       await context.env.DB.prepare('DELETE FROM email_verification_requests WHERE id = ?').bind(id).run();
@@ -95,7 +103,7 @@ export async function onRequestPost(context) {
     if (String(error).includes('no such column') || String(error).includes('no such table')) {
       return json({ error: '邮箱验证数据库尚未就绪。' }, 503);
     }
-    return json({ error: '邮箱验证服务暂时不可用。' }, 503);
+    return json({ error: '密码找回服务暂时不可用。' }, 503);
   }
 }
 

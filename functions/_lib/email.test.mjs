@@ -6,6 +6,7 @@ import {
   hashVerificationCode,
   isValidEmail,
   normalizeEmail,
+  sendVerificationEmail,
   verificationWindow,
   verifyVerificationCode,
 } from './email.js';
@@ -37,4 +38,28 @@ test('verification window expires ten minutes later', () => {
   const window = verificationWindow(now);
   assert.equal(window.expiresAt, '2026-08-13T00:10:00.000Z');
   assert.equal(window.resendAt, '2026-08-13T00:01:00.000Z');
+});
+
+test('verification email copy changes for password reset', async () => {
+  const originalFetch = globalThis.fetch;
+  let payload;
+  globalThis.fetch = async (_url, options) => {
+    payload = JSON.parse(options.body);
+    return new Response('{}', { status: 200 });
+  };
+
+  try {
+    await sendVerificationEmail({
+      apiKey: 'test-key',
+      from: '深情俱乐部 <verify@example.com>',
+      email: 'user@example.com',
+      code: '293736',
+      purpose: 'password-reset',
+    });
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+
+  assert.equal(payload.subject, '深情俱乐部密码重置验证码');
+  assert.match(payload.text, /密码重置验证码/u);
 });

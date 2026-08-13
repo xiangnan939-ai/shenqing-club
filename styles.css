@@ -384,22 +384,26 @@ button {
   padding-top: clamp(16px, 2.5vh, 22px);
 }
 
-.register-form {
+.register-form,
+.recovery-form {
   gap: clamp(11px, 1.7vh, 15px);
   padding-top: clamp(15px, 2.2vh, 20px);
 }
 
-.register-form > .page-field {
+.register-form > .page-field,
+.recovery-form > .page-field {
   grid-template-columns: 82px minmax(0, 1fr);
   align-items: end;
   gap: 14px;
 }
 
-.register-form > .page-field > span {
+.register-form > .page-field > span,
+.recovery-form > .page-field > span {
   padding-bottom: 12px;
 }
 
 .register-form .page-field input,
+.recovery-form .page-field input,
 .register-form .send-code-button {
   height: 42px;
 }
@@ -447,13 +451,15 @@ button {
   gap: 14px;
 }
 
-.register-form .email-code-row .page-field {
+.register-form .email-code-row .page-field,
+.recovery-form .email-code-row .page-field {
   grid-template-columns: 82px minmax(0, 1fr);
   align-items: end;
   gap: 14px;
 }
 
-.register-form .email-code-row .page-field > span {
+.register-form .email-code-row .page-field > span,
+.recovery-form .email-code-row .page-field > span {
   padding-bottom: 12px;
   white-space: nowrap;
 }
@@ -589,37 +595,6 @@ button {
   color: #fff;
 }
 
-.recovery-heading {
-  margin-top: clamp(34px, 6vh, 58px);
-}
-
-.recovery-form {
-  padding-top: clamp(28px, 5vh, 48px);
-}
-
-.recovery-note {
-  display: grid;
-  grid-template-columns: 38px 1fr;
-  gap: 16px;
-  margin-top: 16px;
-  border-top: 1px solid rgba(72, 58, 43, 0.2);
-  border-bottom: 1px solid rgba(72, 58, 43, 0.2);
-  padding: 20px 0;
-}
-
-.note-index {
-  color: #d84d0a;
-  font-family: "Kaiti SC", "STKaiti", "KaiTi", serif;
-  font-size: 24px;
-}
-
-.recovery-note p {
-  margin: 0;
-  color: #665c50;
-  font-size: 13px;
-  line-height: 1.85;
-}
-
 button:focus-visible {
   outline: 2px solid rgba(45, 36, 29, 0.65);
   outline-offset: 4px;
@@ -726,7 +701,8 @@ button:focus-visible {
     padding-top: 8px;
   }
 
-  .register-form {
+  .register-form,
+  .recovery-form {
     gap: 7px;
     padding-top: 9px;
   }
@@ -745,17 +721,22 @@ button:focus-visible {
   }
 
   .register-form > .page-field,
-  .register-form .email-code-row .page-field {
+  .recovery-form > .page-field,
+  .register-form .email-code-row .page-field,
+  .recovery-form .email-code-row .page-field {
     grid-template-columns: 70px minmax(0, 1fr);
     gap: 10px;
   }
 
   .register-form > .page-field > span,
-  .register-form .email-code-row .page-field > span {
+  .recovery-form > .page-field > span,
+  .register-form .email-code-row .page-field > span,
+  .recovery-form .email-code-row .page-field > span {
     padding-bottom: 9px;
   }
 
   .register-form .page-field input,
+  .recovery-form .page-field input,
   .register-form .send-code-button {
     height: 34px;
   }
@@ -777,19 +758,6 @@ button:focus-visible {
   .page-form .form-message {
     min-height: 15px;
     font-size: 10px;
-  }
-
-  .recovery-heading {
-    margin-top: 22px;
-  }
-
-  .recovery-form {
-    padding-top: 18px;
-  }
-
-  .recovery-note {
-    margin-top: 8px;
-    padding: 14px 0;
   }
 }
 

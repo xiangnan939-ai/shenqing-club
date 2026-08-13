@@ -8,8 +8,8 @@
     <meta property="og:description" content="登录深情俱乐部">
     <meta property="og:type" content="website">
     <title>深情俱乐部</title>
-    <link rel="stylesheet" href="styles.css?v=7">
-    <script src="app.js?v=6" defer></script>
+    <link rel="stylesheet" href="styles.css?v=8">
+    <script src="app.js?v=7" defer></script>
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" defer></script>
   </head>
   <body>
@@ -72,7 +72,7 @@
               <header class="page-heading recovery-heading">
                 <p>RECOVERY</p>
                 <h2>忘记密码</h2>
-                <span>先确认账号，再继续处理。</span>
+                <span>通过绑定邮箱重置登录密码。</span>
               </header>
 
               <form class="page-form recovery-form" id="recoveryForm" autocomplete="on">
@@ -81,13 +81,31 @@
                   <input id="recoveryUsername" name="username" type="text" autocomplete="username" required minlength="2" maxlength="24" placeholder="输入注册账号">
                 </label>
 
-                <div class="recovery-note" id="recoveryNote">
-                  <span class="note-index">01</span>
-                  <p>新注册账号会绑定已验证邮箱。密码找回功能会使用该邮箱核验身份。</p>
+                <label class="page-field" for="recoveryEmail">
+                  <span>邮箱</span>
+                  <input id="recoveryEmail" name="email" type="email" autocomplete="email" required maxlength="254" placeholder="账号绑定邮箱">
+                </label>
+
+                <label class="page-field" for="recoveryPassword">
+                  <span>新密码</span>
+                  <input id="recoveryPassword" name="password" type="password" autocomplete="new-password" required minlength="8" maxlength="128" placeholder="至少 8 位字符">
+                </label>
+
+                <label class="page-field" for="recoveryConfirmPassword">
+                  <span>确认密码</span>
+                  <input id="recoveryConfirmPassword" name="confirmPassword" type="password" autocomplete="new-password" required minlength="8" maxlength="128" placeholder="再次输入密码">
+                </label>
+
+                <div class="email-code-row">
+                  <label class="page-field" for="recoveryEmailCode">
+                    <span>邮箱验证码</span>
+                    <input id="recoveryEmailCode" name="emailCode" type="text" inputmode="numeric" autocomplete="one-time-code" required minlength="6" maxlength="6" pattern="[0-9]{6}" placeholder="6 位数字">
+                  </label>
+                  <button class="send-code-button" id="sendResetCode" type="button">发送验证码</button>
                 </div>
 
                 <p class="form-message" id="recoveryMessage" aria-live="polite"></p>
-                <button class="page-submit" type="submit">继续</button>
+                <button class="page-submit" id="recoverySubmit" type="submit">重置密码</button>
               </form>
             </div>
           </section>

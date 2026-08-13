@@ -61,18 +61,22 @@ export function verificationWindow(now = new Date()) {
   };
 }
 
-export async function checkEmailSendLimits(db, email, ipHash, now = new Date()) {
+export async function checkEmailSendLimits(db, email, ipHash, purpose = 'register', now = new Date()) {
   const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000).toISOString();
   const [latest, emailCount, ipCount] = await db.batch([
     db.prepare(
-      'SELECT created_at FROM email_verification_requests WHERE email = ? ORDER BY created_at DESC LIMIT 1',
-    ).bind(email),
+      `SELECT created_at FROM email_verification_requests
+       WHERE email = ? AND purpose = ?
+       ORDER BY created_at DESC LIMIT 1`,
+    ).bind(email, purpose),
     db.prepare(
-      'SELECT COUNT(*) AS count FROM email_verification_requests WHERE email = ? AND created_at >= ?',
-    ).bind(email, oneHourAgo),
+      `SELECT COUNT(*) AS count FROM email_verification_requests
+       WHERE email = ? AND purpose = ? AND created_at >= ?`,
+    ).bind(email, purpose, oneHourAgo),
     db.prepare(
-      'SELECT COUNT(*) AS count FROM email_verification_requests WHERE request_ip_hash = ? AND created_at >= ?',
-    ).bind(ipHash, oneHourAgo),
+      `SELECT COUNT(*) AS count FROM email_verification_requests
+       WHERE request_ip_hash = ? AND purpose = ? AND created_at >= ?`,
+    ).bind(ipHash, purpose, oneHourAgo),
   ]);
 
   const latestCreatedAt = latest.results?.[0]?.created_at;
@@ -95,9 +99,12 @@ function escapeHtml(value) {
   })[character]);
 }
 
-export async function sendVerificationEmail({ apiKey, from, email, code }) {
+export async function sendVerificationEmail({ apiKey, from, email, code, purpose = 'register' }) {
   if (!apiKey || !from) throw new Error('email-not-configured');
   const safeCode = escapeHtml(code);
+  const isPasswordReset = purpose === 'password-reset';
+  const subject = isPasswordReset ? '深情俱乐部密码重置验证码' : '深情俱乐部注册验证码';
+  const actionText = isPasswordReset ? '密码重置' : '注册';
   const response = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
@@ -107,9 +114,9 @@ export async function sendVerificationEmail({ apiKey, from, email, code }) {
     body: JSON.stringify({
       from,
       to: [email],
-      subject: '深情俱乐部注册验证码',
-      html: `<div style="font-family:system-ui,sans-serif;color:#2d241d;line-height:1.7"><h1 style="font-size:22px">深情俱乐部</h1><p>你的注册验证码是：</p><p style="font-size:32px;font-weight:700;letter-spacing:8px">${safeCode}</p><p>验证码 ${CODE_TTL_MINUTES} 分钟内有效。如非本人操作，请忽略此邮件。</p></div>`,
-      text: `你的深情俱乐部注册验证码是 ${code}，${CODE_TTL_MINUTES} 分钟内有效。`,
+      subject,
+      html: `<div style="font-family:system-ui,sans-serif;color:#2d241d;line-height:1.7"><h1 style="font-size:22px">深情俱乐部</h1><p>你的${actionText}验证码是：</p><p style="font-size:32px;font-weight:700;letter-spacing:8px">${safeCode}</p><p>验证码 ${CODE_TTL_MINUTES} 分钟内有效。如非本人操作，请忽略此邮件。</p></div>`,
+      text: `你的深情俱乐部${actionText}验证码是 ${code}，${CODE_TTL_MINUTES} 分钟内有效。`,
     }),
   });
   if (!response.ok) {
