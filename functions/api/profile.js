@@ -1,10 +1,10 @@
 import { json } from '../_lib/auth.js';
 import {
-  normalizeAvatarImage,
   normalizeNickname,
   normalizeSignature,
   requireUser,
   serializeUser,
+  validateAvatarImage,
 } from '../_lib/user.js';
 
 export async function onRequestGet(context) {
@@ -26,7 +26,9 @@ export async function onRequestPut(context) {
 
   const nickname = normalizeNickname(input.nickname) || user.username;
   const signature = normalizeSignature(input.signature) || '这个人很深情，还没留下签名。';
-  const avatarImage = normalizeAvatarImage(input.avatarImage);
+  const avatarValidation = validateAvatarImage(input.avatarImage);
+  if (!avatarValidation.ok) return json({ error: avatarValidation.error }, 400);
+  const avatarImage = avatarValidation.value;
 
   await context.env.DB.prepare(
     `UPDATE users

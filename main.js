@@ -40,6 +40,7 @@ let activityTimer = null;
 let previousMainView = 'profile';
 let activeSettingsDetail = '';
 let selectedAvatarImage = '';
+const MAX_AVATAR_DATA_LENGTH = 210000;
 
 const settingsDetailTitles = {
   profileDetail: '资料修改',
@@ -139,14 +140,20 @@ async function cropAvatarFile(file) {
   const sourceX = Math.floor((image.naturalWidth - size) / 2);
   const sourceY = Math.floor((image.naturalHeight - size) / 2);
   const canvas = document.createElement('canvas');
-  const outputSize = 320;
-  canvas.width = outputSize;
-  canvas.height = outputSize;
   const context = canvas.getContext('2d');
   context.imageSmoothingEnabled = true;
   context.imageSmoothingQuality = 'high';
-  context.drawImage(image, sourceX, sourceY, size, size, 0, 0, outputSize, outputSize);
-  return canvas.toDataURL('image/png');
+
+  for (const outputSize of [320, 288, 256, 224, 192, 160]) {
+    canvas.width = outputSize;
+    canvas.height = outputSize;
+    context.clearRect(0, 0, outputSize, outputSize);
+    context.drawImage(image, sourceX, sourceY, size, size, 0, 0, outputSize, outputSize);
+    const dataUrl = canvas.toDataURL('image/png');
+    if (dataUrl.length <= MAX_AVATAR_DATA_LENGTH) return dataUrl;
+  }
+
+  throw new Error('头像图片过大，请换一张更简单的图片。');
 }
 
 async function apiRequest(endpoint, payload, method = 'POST') {

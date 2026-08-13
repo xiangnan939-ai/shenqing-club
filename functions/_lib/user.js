@@ -1,6 +1,7 @@
 import { json, readSession } from './auth.js';
 
 const ACTIVITY_CAP_SECONDS = 5 * 60;
+const MAX_AVATAR_IMAGE_LENGTH = 220000;
 const LEVEL_THRESHOLDS = [
   0,
   30 * 60,
@@ -26,12 +27,16 @@ export function normalizeSignature(value) {
   return cleanProfileText(value, 80);
 }
 
-export function normalizeAvatarImage(value) {
+export function validateAvatarImage(value) {
   const text = String(value || '').trim();
-  if (!text) return '';
-  if (text.length > 220000) return '';
-  if (!/^data:image\/(?:png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/u.test(text)) return '';
-  return text;
+  if (!text) return { ok: true, value: '' };
+  if (text.length > MAX_AVATAR_IMAGE_LENGTH) {
+    return { ok: false, error: '头像图片过大，请重新选择。' };
+  }
+  if (!/^data:image\/(?:png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/u.test(text)) {
+    return { ok: false, error: '头像图片格式不正确。' };
+  }
+  return { ok: true, value: text };
 }
 
 export function memberLevel(activeSeconds = 0) {
@@ -96,3 +101,7 @@ export async function recordActivity(db, user) {
   user.last_seen_at = nowIso;
   return user;
 }
+
+export const USER_LIMITS = Object.freeze({
+  maxAvatarImageLength: MAX_AVATAR_IMAGE_LENGTH,
+});
