@@ -8,9 +8,9 @@
     <meta property="og:title" content="深情俱乐部">
     <meta property="og:type" content="website">
     <title>深情俱乐部</title>
-    <link rel="stylesheet" href="main.css?v=10">
+    <link rel="stylesheet" href="main.css?v=11">
     <link rel="stylesheet" href="zhao-game.css?v=2">
-    <script src="main.js?v=10" defer></script>
+    <script src="main.js?v=11" defer></script>
     <script src="zhao-game.js?v=2" type="module"></script>
   </head>
   <body class="session-loading">
@@ -43,20 +43,18 @@
             <p>CONNECTIONS</p>
             <h1 id="friendsTitle">好友</h1>
           </div>
-          <button class="header-icon-button" id="openAddFriend" type="button" aria-label="添加好友" title="添加好友">
-            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"></path></svg>
-          </button>
+          <div class="friends-header-actions">
+            <button class="header-icon-button" id="openFriendRequests" type="button" aria-label="好友申请" title="好友申请">
+              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="m17 11 2 2 4-4"></path></svg>
+              <b id="friendRequestCount" hidden>0</b>
+            </button>
+            <button class="header-icon-button" id="openAddFriend" type="button" aria-label="添加好友" title="添加好友">
+              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"></path></svg>
+            </button>
+          </div>
         </header>
 
         <div class="friends-content" id="friendsHome">
-          <button class="friend-requests-entry" id="openFriendRequests" type="button">
-            <span class="request-entry-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="m17 11 2 2 4-4"></path></svg>
-            </span>
-            <span><strong>好友申请</strong><small id="friendRequestSummary">暂无新的好友申请</small></span>
-            <b id="friendRequestCount" hidden>0</b>
-            <svg class="row-chevron" aria-hidden="true" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"></path></svg>
-          </button>
           <label class="search-box" for="friendSearch">
             <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>
             <input id="friendSearch" type="search" placeholder="搜索好友" autocomplete="off">

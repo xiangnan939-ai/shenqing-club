@@ -21,7 +21,6 @@ const outgoingRequestCount = document.querySelector('#outgoingRequestCount');
 const emptyIncomingRequests = document.querySelector('#emptyIncomingRequests');
 const emptyOutgoingRequests = document.querySelector('#emptyOutgoingRequests');
 const friendRequestCount = document.querySelector('#friendRequestCount');
-const friendRequestSummary = document.querySelector('#friendRequestSummary');
 const friendNavBadge = document.querySelector('#friendNavBadge');
 const openFriendRequests = document.querySelector('#openFriendRequests');
 const openAddFriend = document.querySelector('#openAddFriend');
@@ -373,7 +372,6 @@ function renderFriendRequests() {
   friendNavBadge.hidden = count === 0;
   friendRequestCount.textContent = String(count);
   friendNavBadge.textContent = count > 9 ? '9+' : String(count);
-  friendRequestSummary.textContent = count ? `${count} 个申请待处理` : '暂无新的好友申请';
 }
 
 async function loadFriends({ quiet = false } = {}) {
@@ -391,6 +389,7 @@ function showFriendsHome() {
   activeFriend = null;
   friendsTitle.textContent = '好友';
   backFromChat.hidden = true;
+  openFriendRequests.hidden = false;
   openAddFriend.hidden = false;
   friendsHome.hidden = false;
   friendRequestsPage.hidden = true;
@@ -401,6 +400,7 @@ function showFriendRequestsPage() {
   stopChatRefresh();
   friendsTitle.textContent = '好友申请';
   backFromChat.hidden = false;
+  openFriendRequests.hidden = true;
   openAddFriend.hidden = true;
   friendsHome.hidden = true;
   friendRequestsPage.hidden = false;
@@ -448,6 +448,7 @@ async function openChat(friend) {
   activeFriend = friend;
   friendsTitle.textContent = friend.nickname;
   backFromChat.hidden = false;
+  openFriendRequests.hidden = true;
   openAddFriend.hidden = true;
   friendsHome.hidden = true;
   friendRequestsPage.hidden = true;
