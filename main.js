@@ -2,7 +2,6 @@ const views = document.querySelectorAll('[data-view]');
 const navItems = document.querySelectorAll('[data-target]');
 const profileNickname = document.querySelector('#profileNickname');
 const profileSignature = document.querySelector('#profileSignature');
-const memberTitle = document.querySelector('#memberTitle');
 const memberLevel = document.querySelector('#memberLevel');
 const accountUsername = document.querySelector('#accountUsername');
 const accountEmail = document.querySelector('#accountEmail');
@@ -14,11 +13,8 @@ const friendRows = document.querySelectorAll('[data-friend]');
 const visibleFriendCount = document.querySelector('#visibleFriendCount');
 const emptyFriends = document.querySelector('#emptyFriends');
 const appToast = document.querySelector('#appToast');
-const settingsDrawer = document.querySelector('#settingsDrawer');
 const settingsOpeners = document.querySelectorAll('#openSettings, #openSettingsRow');
-const settingsClosers = document.querySelectorAll('[data-close-settings]');
-const settingsTabs = document.querySelectorAll('[data-settings-tab]');
-const settingsPanels = document.querySelectorAll('[data-settings-panel]');
+const backFromSettings = document.querySelector('#backFromSettings');
 const profileEdit = document.querySelector('#profileEdit');
 const profileEditMessage = document.querySelector('#profileEditMessage');
 const editAvatarText = document.querySelector('#editAvatarText');
@@ -36,6 +32,7 @@ const deleteStatus = document.querySelector('#deleteStatus');
 let toastTimer;
 let currentProfile = null;
 let activityTimer = null;
+let previousMainView = 'profile';
 
 function switchView(target) {
   views.forEach((view) => {
@@ -79,7 +76,6 @@ function renderProfile(profile) {
   currentProfile = profile;
   profileNickname.textContent = profile.nickname || profile.username;
   profileSignature.textContent = profile.signature || '这个人很深情，还没留下签名。';
-  memberTitle.textContent = profile.memberTitle || `中国第${profile.id || '-'}深情`;
   memberLevel.textContent = profile.memberLevel || 'V1';
   accountUsername.textContent = profile.username || '-';
   accountEmail.textContent = profile.email || '未绑定';
@@ -146,28 +142,12 @@ function filterFriends() {
   emptyFriends.hidden = visible !== 0;
 }
 
-function openSettings(tabName = 'profileEdit') {
-  settingsDrawer.hidden = false;
-  document.body.classList.add('settings-open');
-  switchSettingsTab(tabName);
-  window.setTimeout(() => settingsDrawer.querySelector('.drawer-close').focus(), 0);
-}
-
-function closeSettings() {
-  settingsDrawer.hidden = true;
-  document.body.classList.remove('settings-open');
-}
-
-function switchSettingsTab(tabName) {
-  settingsTabs.forEach((tab) => {
-    const active = tab.dataset.settingsTab === tabName;
-    tab.classList.toggle('is-active', active);
-  });
-  settingsPanels.forEach((panel) => {
-    const active = panel.dataset.settingsPanel === tabName;
-    panel.classList.toggle('is-active', active);
-    panel.hidden = !active;
-  });
+function openSettings() {
+  const activeView = document.querySelector('.app-view.is-active');
+  previousMainView = activeView?.dataset.view === 'settings' ? 'profile' : activeView?.dataset.view || 'profile';
+  switchView('settings');
+  document.querySelector('#settingsView').scrollTop = 0;
+  window.setTimeout(() => backFromSettings.focus(), 0);
 }
 
 navItems.forEach((item) => {
@@ -185,20 +165,10 @@ document.querySelectorAll('.message-button').forEach((button) => {
 });
 
 settingsOpeners.forEach((button) => {
-  button.addEventListener('click', () => openSettings('profileEdit'));
+  button.addEventListener('click', openSettings);
 });
 
-settingsClosers.forEach((button) => {
-  button.addEventListener('click', closeSettings);
-});
-
-settingsTabs.forEach((tab) => {
-  tab.addEventListener('click', () => switchSettingsTab(tab.dataset.settingsTab));
-});
-
-document.addEventListener('keydown', (event) => {
-  if (event.key === 'Escape' && !settingsDrawer.hidden) closeSettings();
-});
+backFromSettings.addEventListener('click', () => switchView(previousMainView || 'profile'));
 
 profileEdit.addEventListener('submit', async (event) => {
   event.preventDefault();

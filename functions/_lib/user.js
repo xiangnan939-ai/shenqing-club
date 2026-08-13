@@ -51,7 +51,6 @@ export function serializeUser(user) {
     nickname,
     signature: user.signature || '这个人很深情，还没留下签名。',
     avatarText,
-    memberTitle: `中国第${user.id}深情`,
     memberLevel: `V${memberLevel(activeSeconds)}`,
     activeSeconds,
     activeMinutes: Math.floor(activeSeconds / 60),

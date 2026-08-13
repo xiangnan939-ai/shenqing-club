@@ -10,7 +10,7 @@ test('member level starts at V1 and increases with active time', () => {
   assert.equal(memberLevel(2 * 60 * 60), 3);
 });
 
-test('serialized user exposes registration-order member title', () => {
+test('serialized user exposes profile defaults', () => {
   const profile = serializeUser({
     id: 7,
     username: 'shenqing',
@@ -22,7 +22,6 @@ test('serialized user exposes registration-order member title', () => {
     created_at: '2026-08-13T00:00:00.000Z',
   });
 
-  assert.equal(profile.memberTitle, '中国第7深情');
   assert.equal(profile.memberLevel, 'V1');
   assert.equal(profile.nickname, 'shenqing');
   assert.equal(profile.avatarText, 's');

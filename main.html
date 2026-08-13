@@ -8,9 +8,9 @@
     <meta property="og:title" content="深情俱乐部">
     <meta property="og:type" content="website">
     <title>深情俱乐部</title>
-    <link rel="stylesheet" href="main.css?v=6">
+    <link rel="stylesheet" href="main.css?v=7">
     <link rel="stylesheet" href="zhao-game.css?v=2">
-    <script src="main.js?v=6" defer></script>
+    <script src="main.js?v=7" defer></script>
     <script src="zhao-game.js?v=2" type="module"></script>
   </head>
   <body class="session-loading">
@@ -105,7 +105,6 @@
           <section class="profile-identity" aria-label="账号资料">
             <div class="profile-avatar" id="profileAvatar" aria-hidden="true">深</div>
             <div class="profile-identity-main">
-              <span class="member-title" id="memberTitle">中国第-深情</span>
               <h2 id="profileNickname">加载中</h2>
               <p id="profileSignature">这个人很深情，还没留下签名。</p>
             </div>
@@ -149,73 +148,57 @@
         </div>
       </section>
 
-      <nav class="bottom-navigation" aria-label="主导航">
-        <button class="nav-item is-active" type="button" data-target="entertainment" aria-controls="entertainmentView" aria-current="page">
-          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 12h4"></path><path d="M8 10v4"></path><path d="M15 13h.01"></path><path d="M18 11h.01"></path><path d="M7.5 5h9A4.5 4.5 0 0 1 21 9.5v5a3.5 3.5 0 0 1-6.1 2.35L13 15H11l-1.9 1.85A3.5 3.5 0 0 1 3 14.5v-5A4.5 4.5 0 0 1 7.5 5z"></path></svg>
-          <span>娱乐</span>
-        </button>
-        <button class="nav-item" type="button" data-target="friends" aria-controls="friendsView">
-          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-          <span>好友</span>
-        </button>
-        <button class="nav-item" type="button" data-target="profile" aria-controls="profileView">
-          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20 21a8 8 0 0 0-16 0"></path><circle cx="12" cy="7" r="4"></circle></svg>
-          <span>我的</span>
-        </button>
-      </nav>
-
-      <p class="app-toast" id="appToast" role="status" aria-live="polite"></p>
-    </main>
-
-    <div class="settings-drawer" id="settingsDrawer" role="dialog" aria-modal="true" aria-labelledby="settingsDrawerTitle" hidden>
-      <button class="drawer-backdrop" type="button" aria-label="关闭设置" data-close-settings></button>
-      <section class="drawer-panel">
-        <header class="drawer-header">
+      <section class="app-view" id="settingsView" data-view="settings" aria-labelledby="settingsTitle" hidden>
+        <header class="view-header settings-page-header">
+          <button class="back-button" type="button" id="backFromSettings" aria-label="返回我的">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"></path></svg>
+            <span>返回</span>
+          </button>
           <div>
             <p>SETTINGS</p>
-            <h2 id="settingsDrawerTitle">设置</h2>
+            <h1 id="settingsTitle">设置</h1>
           </div>
-          <button class="drawer-close" type="button" aria-label="关闭设置" data-close-settings>&times;</button>
         </header>
 
-        <nav class="settings-tabs" aria-label="设置分类">
-          <button class="settings-tab is-active" type="button" data-settings-tab="profileEdit">资料</button>
-          <button class="settings-tab" type="button" data-settings-tab="feedbackPanel">反馈</button>
-          <button class="settings-tab" type="button" data-settings-tab="securityPanel">安全</button>
-        </nav>
+        <div class="settings-content">
+          <section class="settings-section" aria-labelledby="profileEditTitle">
+            <h2 id="profileEditTitle">个人信息</h2>
+            <form class="settings-panel" id="profileEdit">
+              <label>
+                <span>头像字</span>
+                <input id="editAvatarText" name="avatarText" maxlength="4" placeholder="深">
+              </label>
+              <label>
+                <span>昵称</span>
+                <input id="editNickname" name="nickname" maxlength="24" required>
+              </label>
+              <label>
+                <span>个性签名</span>
+                <textarea id="editSignature" name="signature" maxlength="80" rows="3"></textarea>
+              </label>
+              <p class="settings-message" id="profileEditMessage" aria-live="polite"></p>
+              <button class="primary-action" type="submit">保存资料</button>
+            </form>
+          </section>
 
-        <div class="settings-panels">
-          <form class="settings-panel is-active" id="profileEdit" data-settings-panel="profileEdit">
-            <label>
-              <span>头像字</span>
-              <input id="editAvatarText" name="avatarText" maxlength="4" placeholder="深">
-            </label>
-            <label>
-              <span>昵称</span>
-              <input id="editNickname" name="nickname" maxlength="24" required>
-            </label>
-            <label>
-              <span>个性签名</span>
-              <textarea id="editSignature" name="signature" maxlength="80" rows="3"></textarea>
-            </label>
-            <p class="settings-message" id="profileEditMessage" aria-live="polite"></p>
-            <button class="primary-action" type="submit">保存资料</button>
-          </form>
+          <section class="settings-section" aria-labelledby="feedbackTitle">
+            <h2 id="feedbackTitle">意见反馈</h2>
+            <form class="settings-panel" id="feedbackPanel">
+              <label>
+                <span>联系方式</span>
+                <input id="feedbackContact" name="contact" maxlength="120" placeholder="邮箱或微信，可不填">
+              </label>
+              <label>
+                <span>反馈内容</span>
+                <textarea id="feedbackMessage" name="message" maxlength="1000" rows="5" required placeholder="哪里不好用、想加什么，都可以写在这里。"></textarea>
+              </label>
+              <p class="settings-message" id="feedbackStatus" aria-live="polite"></p>
+              <button class="primary-action" type="submit">发送反馈</button>
+            </form>
+          </section>
 
-          <form class="settings-panel" id="feedbackPanel" data-settings-panel="feedbackPanel" hidden>
-            <label>
-              <span>联系方式</span>
-              <input id="feedbackContact" name="contact" maxlength="120" placeholder="邮箱或微信，可不填">
-            </label>
-            <label>
-              <span>意见反馈</span>
-              <textarea id="feedbackMessage" name="message" maxlength="1000" rows="5" required placeholder="哪里不好用、想加什么，都可以写在这里。"></textarea>
-            </label>
-            <p class="settings-message" id="feedbackStatus" aria-live="polite"></p>
-            <button class="primary-action" type="submit">发送反馈</button>
-          </form>
-
-          <div class="settings-panel security-panel" id="securityPanel" data-settings-panel="securityPanel" hidden>
+          <section class="settings-section security-panel" aria-labelledby="securityTitle">
+            <h2 id="securityTitle">账号安全</h2>
             <form id="passwordForm">
               <h3>修改密码</h3>
               <label>
@@ -247,28 +230,45 @@
               <p class="settings-message" id="emailStatus" aria-live="polite"></p>
               <button class="primary-action" type="submit">更新邮箱</button>
             </form>
+          </section>
 
-            <div class="danger-zone">
-              <button class="secondary-action" type="button" id="logoutButton">退出登录</button>
-              <form id="deleteAccountForm">
-                <h3>注销账号</h3>
-                <label>
-                  <span>当前密码</span>
-                  <input name="password" type="password" autocomplete="current-password" required>
-                </label>
-                <label>
-                  <span>确认文字</span>
-                  <input name="confirmText" required placeholder="输入：注销账号">
-                </label>
-                <p class="settings-message" id="deleteStatus" aria-live="polite"></p>
-                <button class="danger-action" type="submit">永久注销账号</button>
-              </form>
-            </div>
-          </div>
+          <section class="settings-section danger-zone" aria-labelledby="dangerTitle">
+            <h2 id="dangerTitle">其他</h2>
+            <button class="secondary-action" type="button" id="logoutButton">退出登录</button>
+            <form id="deleteAccountForm">
+              <h3>注销账号</h3>
+              <label>
+                <span>当前密码</span>
+                <input name="password" type="password" autocomplete="current-password" required>
+              </label>
+              <label>
+                <span>确认文字</span>
+                <input name="confirmText" required placeholder="输入：注销账号">
+              </label>
+              <p class="settings-message" id="deleteStatus" aria-live="polite"></p>
+              <button class="danger-action" type="submit">永久注销账号</button>
+            </form>
+          </section>
         </div>
       </section>
-    </div>
 
+      <nav class="bottom-navigation" aria-label="主导航">
+        <button class="nav-item is-active" type="button" data-target="entertainment" aria-controls="entertainmentView" aria-current="page">
+          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 12h4"></path><path d="M8 10v4"></path><path d="M15 13h.01"></path><path d="M18 11h.01"></path><path d="M7.5 5h9A4.5 4.5 0 0 1 21 9.5v5a3.5 3.5 0 0 1-6.1 2.35L13 15H11l-1.9 1.85A3.5 3.5 0 0 1 3 14.5v-5A4.5 4.5 0 0 1 7.5 5z"></path></svg>
+          <span>娱乐</span>
+        </button>
+        <button class="nav-item" type="button" data-target="friends" aria-controls="friendsView">
+          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+          <span>好友</span>
+        </button>
+        <button class="nav-item" type="button" data-target="profile" aria-controls="profileView">
+          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20 21a8 8 0 0 0-16 0"></path><circle cx="12" cy="7" r="4"></circle></svg>
+          <span>我的</span>
+        </button>
+      </nav>
+
+      <p class="app-toast" id="appToast" role="status" aria-live="polite"></p>
+    </main>
     <section class="zhao-game" id="zhaoGame" aria-label="赵云与阿斗游戏" hidden>
       <div class="zy-game-shell" id="zyGameShell"></div>
       <p class="zy-live" id="zyLive" role="status" aria-live="polite"></p>
