@@ -13,7 +13,12 @@ export async function onRequestGet(context) {
       `SELECT ${USER_COLUMNS}, f.id AS friendship_id,
               (SELECT COUNT(*) FROM direct_messages m
                WHERE m.sender_id = u.id AND m.recipient_id = ? AND m.read_at IS NULL) AS unread_count,
-              (SELECT body FROM direct_messages m
+              (SELECT CASE
+                        WHEN m.message_type = 'file'
+                          THEN '文件：' || COALESCE(m.attachment_name, '未命名文件')
+                        ELSE m.body
+                      END
+               FROM direct_messages m
                WHERE (m.sender_id = ? AND m.recipient_id = u.id)
                   OR (m.sender_id = u.id AND m.recipient_id = ?)
                ORDER BY m.id DESC LIMIT 1) AS last_message,

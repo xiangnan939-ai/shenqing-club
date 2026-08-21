@@ -537,6 +537,11 @@ textarea {
   justify-items: end;
 }
 
+.chat-message.is-file {
+  width: min(88%, 520px);
+  max-width: 520px;
+}
+
 .chat-message p {
   margin: 0;
   border: 1px solid rgba(90, 78, 66, 0.15);
@@ -553,6 +558,96 @@ textarea {
   border-radius: 8px 3px 8px 8px;
   background: #e96327;
   color: #fff;
+}
+
+.chat-file-card {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid rgba(90, 78, 66, 0.16);
+  border-radius: 7px;
+  padding: 10px;
+  background: rgba(255, 253, 248, 0.96);
+  box-shadow: 0 4px 14px rgba(55, 47, 40, 0.05);
+}
+
+.chat-message.is-mine .chat-file-card {
+  border-color: rgba(221, 109, 58, 0.38);
+}
+
+.chat-file-icon {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border-radius: 6px;
+  background: #f8e5d8;
+  color: #c84f1f;
+}
+
+.chat-file-icon svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.7;
+}
+
+.chat-file-info {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.chat-file-info strong {
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chat-file-info span,
+.chat-file-status {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.chat-file-status {
+  white-space: nowrap;
+}
+
+.chat-file-status.is-received {
+  color: #4a7960;
+}
+
+.chat-file-status.is-expired {
+  color: #a0988f;
+}
+
+.chat-file-receive {
+  min-height: 34px;
+  border: 1px solid #d55d2b;
+  border-radius: 6px;
+  padding: 0 10px;
+  background: #e96327;
+  color: #fff;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.chat-file-receive:disabled {
+  opacity: 0.58;
+}
+
+.chat-file-caption {
+  width: fit-content;
+  max-width: 100%;
 }
 
 .chat-message time {
@@ -572,12 +667,37 @@ textarea {
 
 .chat-composer {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 44px;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
   align-items: end;
   gap: 10px;
   border-top: 1px solid var(--line);
   padding: 12px 0;
   background: rgba(247, 244, 237, 0.92);
+}
+
+.chat-file-selection {
+  display: grid;
+  min-width: 0;
+  grid-column: 1 / -1;
+  grid-template-columns: minmax(0, 1fr) 30px;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid rgba(213, 93, 43, 0.26);
+  border-radius: 6px;
+  padding: 6px 7px 6px 10px;
+  background: #fff8f2;
+  color: #755244;
+  font-size: 11px;
+}
+
+.chat-file-selection[hidden] {
+  display: none;
+}
+
+.chat-file-selection-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .chat-composer textarea {
@@ -594,7 +714,8 @@ textarea {
   outline: none;
 }
 
-.chat-composer button {
+.chat-attach-button,
+.chat-send-button {
   display: grid;
   width: 44px;
   height: 44px;
@@ -605,6 +726,28 @@ textarea {
   color: #fff;
 }
 
+.chat-attach-button {
+  border: 1px solid rgba(95, 83, 71, 0.2);
+  background: rgba(255, 253, 248, 0.88);
+  color: #6f665f;
+}
+
+.chat-send-button:disabled,
+.chat-attach-button:disabled {
+  opacity: 0.55;
+}
+
+.chat-file-remove {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #8c6a5d;
+}
+
 .chat-composer svg {
   width: 19px;
   height: 19px;
@@ -613,6 +756,11 @@ textarea {
   stroke-linecap: round;
   stroke-linejoin: round;
   stroke-width: 1.8;
+}
+
+.chat-file-remove svg {
+  width: 16px;
+  height: 16px;
 }
 
 .nav-badge {

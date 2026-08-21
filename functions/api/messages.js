@@ -1,4 +1,5 @@
 import { json } from '../_lib/auth.js';
+import { serializeChatMessage } from '../_lib/chat-files.js';
 import { acceptedFriendship, FRIEND_LIMITS } from '../_lib/friends.js';
 import { requireUser } from '../_lib/user.js';
 
@@ -24,13 +25,22 @@ export async function onRequestGet(context) {
   const friend = await verifyFriend(context, user.id, friendId);
   if (!friend) return json({ error: '你们还不是好友。' }, 403);
 
+  await context.env.DB.prepare(
+    'DELETE FROM message_attachments WHERE expires_at <= CURRENT_TIMESTAMP',
+  ).run();
+
   const result = await context.env.DB.prepare(
     `SELECT * FROM (
-       SELECT id, sender_id, recipient_id, body, created_at, read_at
-       FROM direct_messages
-       WHERE (sender_id = ? AND recipient_id = ?)
-          OR (sender_id = ? AND recipient_id = ?)
-       ORDER BY id DESC LIMIT 100
+       SELECT dm.id, dm.sender_id, dm.recipient_id, dm.body, dm.created_at, dm.read_at,
+              dm.message_type, dm.attachment_id, dm.attachment_name,
+              dm.attachment_size, dm.attachment_mime, dm.attachment_received_at,
+              CASE WHEN ma.id IS NULL THEN 0 ELSE 1 END AS attachment_available
+       FROM direct_messages dm
+       LEFT JOIN message_attachments ma
+         ON ma.id = dm.attachment_id AND ma.expires_at > CURRENT_TIMESTAMP
+       WHERE (dm.sender_id = ? AND dm.recipient_id = ?)
+          OR (dm.sender_id = ? AND dm.recipient_id = ?)
+       ORDER BY dm.id DESC LIMIT 100
      ) ORDER BY id ASC`,
   ).bind(user.id, friendId, friendId, user.id).all();
 
@@ -41,14 +51,7 @@ export async function onRequestGet(context) {
 
   return json({
     ok: true,
-    messages: (result.results || []).map((message) => ({
-      id: Number(message.id),
-      senderId: Number(message.sender_id),
-      recipientId: Number(message.recipient_id),
-      body: message.body,
-      createdAt: message.created_at,
-      readAt: message.read_at || '',
-    })),
+    messages: (result.results || []).map(serializeChatMessage),
   });
 }
 
@@ -79,8 +82,8 @@ export async function onRequestPost(context) {
   }
 
   const insert = await context.env.DB.prepare(
-    `INSERT INTO direct_messages (sender_id, recipient_id, body)
-     VALUES (?, ?, ?)`,
+    `INSERT INTO direct_messages (sender_id, recipient_id, body, message_type)
+     VALUES (?, ?, ?, 'text')`,
   ).bind(user.id, friendId, body).run();
   return json({ ok: true, messageId: Number(insert.meta?.last_row_id) }, 201);
 }

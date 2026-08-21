@@ -8,9 +8,9 @@
     <meta property="og:title" content="深情俱乐部">
     <meta property="og:type" content="website">
     <title>深情俱乐部</title>
-    <link rel="stylesheet" href="main.css?v=11">
+    <link rel="stylesheet" href="main.css?v=12">
     <link rel="stylesheet" href="zhao-game.css?v=3">
-    <script src="main.js?v=11" defer></script>
+    <script src="main.js?v=12" defer></script>
     <script src="zhao-game.js?v=3" type="module"></script>
   </head>
   <body class="session-loading">
@@ -92,9 +92,19 @@
           <div class="chat-messages" id="chatMessages" aria-live="polite"></div>
           <p class="chat-empty" id="chatEmpty">还没有消息，打个招呼吧</p>
           <form class="chat-composer" id="chatForm">
+            <div class="chat-file-selection" id="chatFileSelection" hidden>
+              <span class="chat-file-selection-name" id="chatFileSelectionName"></span>
+              <button class="chat-file-remove" id="chatFileRemove" type="button" aria-label="移除文件" title="移除文件">
+                <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"></path></svg>
+              </button>
+            </div>
+            <input id="chatFileInput" name="file" type="file" hidden>
+            <button class="chat-attach-button" id="chatAttachButton" type="button" aria-label="添加文件" title="添加文件">
+              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m21.4 11.6-8.9 8.9a6 6 0 0 1-8.5-8.5l9.6-9.6a4 4 0 0 1 5.7 5.7l-9.6 9.6a2 2 0 0 1-2.8-2.8l8.9-8.9"></path></svg>
+            </button>
             <label for="chatInput" class="sr-only">输入消息</label>
-            <textarea id="chatInput" name="message" rows="1" maxlength="500" placeholder="输入消息" required></textarea>
-            <button type="submit" aria-label="发送消息" title="发送">
+            <textarea id="chatInput" name="message" rows="1" maxlength="500" placeholder="输入消息或发送文件"></textarea>
+            <button class="chat-send-button" type="submit" aria-label="发送消息" title="发送">
               <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4Z"></path><path d="M22 2 11 13"></path></svg>
             </button>
           </form>

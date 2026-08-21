@@ -31,6 +31,11 @@ const chatMessages = document.querySelector('#chatMessages');
 const chatEmpty = document.querySelector('#chatEmpty');
 const chatForm = document.querySelector('#chatForm');
 const chatInput = document.querySelector('#chatInput');
+const chatFileInput = document.querySelector('#chatFileInput');
+const chatAttachButton = document.querySelector('#chatAttachButton');
+const chatFileSelection = document.querySelector('#chatFileSelection');
+const chatFileSelectionName = document.querySelector('#chatFileSelectionName');
+const chatFileRemove = document.querySelector('#chatFileRemove');
 const addFriendModal = document.querySelector('#addFriendModal');
 const addFriendForm = document.querySelector('#addFriendForm');
 const addFriendUsername = document.querySelector('#addFriendUsername');
@@ -69,7 +74,11 @@ let friendsData = { friends: [], incoming: [], outgoing: [] };
 let activeFriend = null;
 let friendRefreshTimer = null;
 let chatRefreshTimer = null;
+let selectedChatFile = null;
+let currentChatMessages = [];
+const receivingAttachments = new Set();
 const MAX_AVATAR_DATA_LENGTH = 210000;
+const MAX_CHAT_FILE_BYTES = 1_500_000;
 
 const settingsDetailTitles = {
   profileDetail: '资料修改',
@@ -386,6 +395,7 @@ async function loadFriends({ quiet = false } = {}) {
 
 function showFriendsHome() {
   stopChatRefresh();
+  clearSelectedChatFile();
   activeFriend = null;
   friendsTitle.textContent = '好友';
   backFromChat.hidden = true;
@@ -398,6 +408,7 @@ function showFriendsHome() {
 
 function showFriendRequestsPage() {
   stopChatRefresh();
+  clearSelectedChatFile();
   friendsTitle.textContent = '好友申请';
   backFromChat.hidden = false;
   openFriendRequests.hidden = true;
@@ -407,19 +418,84 @@ function showFriendRequestsPage() {
   chatPage.hidden = true;
 }
 
+function formatFileSize(bytes) {
+  const size = Math.max(0, Number(bytes) || 0);
+  if (size < 1024) return `${size} B`;
+  if (size < 1024 * 1024) return `${(size / 1024).toFixed(size < 10240 ? 1 : 0)} KB`;
+  return `${(size / (1024 * 1024)).toFixed(2)} MB`;
+}
+
+function clearSelectedChatFile() {
+  selectedChatFile = null;
+  chatFileInput.value = '';
+  chatFileSelection.hidden = true;
+  chatFileSelectionName.textContent = '';
+}
+
+function showSelectedChatFile(file) {
+  selectedChatFile = file;
+  chatFileSelectionName.textContent = `${file.name} · ${formatFileSize(file.size)}`;
+  chatFileSelection.hidden = false;
+}
+
+function createFileMessage(message, mine) {
+  const attachment = message.attachment || {};
+  const card = document.createElement('div');
+  card.className = 'chat-file-card';
+
+  const icon = document.createElement('span');
+  icon.className = 'chat-file-icon';
+  icon.innerHTML = '<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"></path><path d="M14 2v6h6M8 13h8M8 17h6"></path></svg>';
+
+  const info = document.createElement('span');
+  info.className = 'chat-file-info';
+  const name = document.createElement('strong');
+  name.textContent = attachment.name || '未命名文件';
+  const details = document.createElement('span');
+  details.textContent = formatFileSize(attachment.size);
+  info.append(name, details);
+  card.append(icon, info);
+
+  const receiving = receivingAttachments.has(attachment.id);
+  if (!mine && attachment.status === 'pending') {
+    const receive = document.createElement('button');
+    receive.type = 'button';
+    receive.className = 'chat-file-receive';
+    receive.textContent = receiving ? '接收中' : '接收文件';
+    receive.disabled = receiving;
+    receive.addEventListener('click', () => receiveChatFile(message));
+    card.append(receive);
+  } else {
+    const status = document.createElement('span');
+    status.className = `chat-file-status is-${attachment.status || 'expired'}`;
+    if (attachment.status === 'received') status.textContent = '已接收并清除';
+    else if (attachment.status === 'pending') status.textContent = '等待对方接收';
+    else status.textContent = '文件已过期';
+    card.append(status);
+  }
+  return card;
+}
+
 function renderMessages(messages) {
+  currentChatMessages = messages;
   const wasNearBottom = chatMessages.scrollHeight - chatMessages.scrollTop - chatMessages.clientHeight < 100;
   chatMessages.replaceChildren();
   messages.forEach((message) => {
     const bubble = document.createElement('article');
     const mine = Number(message.senderId) === Number(currentProfile.id);
-    bubble.className = `chat-message${mine ? ' is-mine' : ''}`;
-    const body = document.createElement('p');
-    body.textContent = message.body;
+    const isFile = message.type === 'file';
+    bubble.className = `chat-message${mine ? ' is-mine' : ''}${isFile ? ' is-file' : ''}`;
+    if (isFile) bubble.append(createFileMessage(message, mine));
+    if (message.body) {
+      const body = document.createElement('p');
+      body.className = isFile ? 'chat-file-caption' : '';
+      body.textContent = message.body;
+      bubble.append(body);
+    }
     const time = document.createElement('time');
     const date = new Date(`${message.createdAt.replace(' ', 'T')}Z`);
     time.textContent = date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
-    bubble.append(body, time);
+    bubble.append(time);
     chatMessages.append(bubble);
   });
   chatEmpty.hidden = messages.length !== 0;
@@ -445,6 +521,8 @@ function stopChatRefresh() {
 }
 
 async function openChat(friend) {
+  clearSelectedChatFile();
+  currentChatMessages = [];
   activeFriend = friend;
   friendsTitle.textContent = friend.nickname;
   backFromChat.hidden = false;
@@ -459,6 +537,80 @@ async function openChat(friend) {
   stopChatRefresh();
   chatRefreshTimer = window.setInterval(() => loadMessages({ quiet: true }), 3000);
   chatInput.focus();
+}
+
+async function uploadChatFile(file, body) {
+  const formData = new FormData();
+  formData.append('friendId', String(activeFriend.id));
+  formData.append('body', body);
+  formData.append('file', file, file.name);
+  let response;
+  try {
+    response = await fetch('/api/message-file', {
+      method: 'POST',
+      credentials: 'same-origin',
+      body: formData,
+    });
+  } catch {
+    throw new Error('网络连接中断，请稍后重试。');
+  }
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(result.error || '文件发送失败，请稍后重试。');
+  return result;
+}
+
+async function acknowledgeReceivedFile(attachmentId) {
+  let lastError;
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      return await apiRequest(
+        `/api/message-file?id=${encodeURIComponent(attachmentId)}`,
+        null,
+        'DELETE',
+      );
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  throw lastError;
+}
+
+function saveReceivedFile(bytes, name) {
+  const url = URL.createObjectURL(new Blob([bytes], { type: 'application/octet-stream' }));
+  const download = document.createElement('a');
+  download.href = url;
+  download.download = name || '下载文件';
+  document.body.append(download);
+  download.click();
+  download.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 30000);
+}
+
+async function receiveChatFile(message) {
+  const attachment = message.attachment;
+  if (!attachment?.id || receivingAttachments.has(attachment.id)) return;
+  receivingAttachments.add(attachment.id);
+  renderMessages(currentChatMessages);
+  try {
+    const response = await fetch(
+      `/api/message-file?id=${encodeURIComponent(attachment.id)}`,
+      { credentials: 'same-origin', cache: 'no-store' },
+    );
+    if (!response.ok) {
+      const result = await response.json().catch(() => ({}));
+      throw new Error(result.error || '文件接收失败，请稍后重试。');
+    }
+    const bytes = await response.arrayBuffer();
+    await acknowledgeReceivedFile(attachment.id);
+    saveReceivedFile(bytes, attachment.name);
+    showToast('文件已接收，临时文件已自动清除');
+    await loadMessages();
+  } catch (error) {
+    showToast(error.message);
+  } finally {
+    receivingAttachments.delete(attachment.id);
+    await loadMessages({ quiet: true });
+  }
 }
 
 async function respondToFriendRequest(friendshipId, action) {
@@ -598,19 +750,45 @@ chatForm.addEventListener('submit', async (event) => {
   event.preventDefault();
   if (!activeFriend) return;
   const body = chatInput.value.trim();
-  if (!body) return;
+  if (!body && !selectedChatFile) return;
   const submit = chatForm.querySelector('button[type="submit"]');
   submit.disabled = true;
+  chatAttachButton.disabled = true;
   try {
-    await apiRequest('/api/messages', { friendId: activeFriend.id, body });
+    if (selectedChatFile) await uploadChatFile(selectedChatFile, body);
+    else await apiRequest('/api/messages', { friendId: activeFriend.id, body });
     chatInput.value = '';
+    clearSelectedChatFile();
     await loadMessages();
     chatInput.focus();
   } catch (error) {
     showToast(error.message);
   } finally {
     submit.disabled = false;
+    chatAttachButton.disabled = false;
   }
+});
+
+chatAttachButton.addEventListener('click', () => chatFileInput.click());
+chatFileRemove.addEventListener('click', () => {
+  clearSelectedChatFile();
+  chatInput.focus();
+});
+chatFileInput.addEventListener('change', () => {
+  const [file] = chatFileInput.files || [];
+  if (!file) return;
+  if (file.size <= 0) {
+    clearSelectedChatFile();
+    showToast('不能发送空文件');
+    return;
+  }
+  if (file.size > MAX_CHAT_FILE_BYTES) {
+    clearSelectedChatFile();
+    showToast('单个文件不能超过 1.5 MB');
+    return;
+  }
+  showSelectedChatFile(file);
+  chatInput.focus();
 });
 
 chatInput.addEventListener('keydown', (event) => {
