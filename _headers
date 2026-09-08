@@ -27,5 +27,8 @@
 /assets/*
   Cache-Control: public, max-age=604800, immutable
 
+/games/dandan-racing/*
+  Cache-Control: no-cache
+
 /private/hero.png
   Cache-Control: private, no-store

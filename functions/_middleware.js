@@ -6,12 +6,17 @@ const PROTECTED_PATHS = [
   '/main.css',
   '/main.js',
   '/assets/super-oreo-icon.webp',
+  '/assets/dandan-racing-icon.webp',
   '/private/hero.png',
 ];
 
 export async function onRequest(context) {
   const url = new URL(context.request.url);
-  const isProtected = PROTECTED_PATHS.includes(url.pathname);
+  const isGameEntry = url.pathname === '/games/dandan-racing'
+    || url.pathname === '/games/dandan-racing/';
+  const isProtected = PROTECTED_PATHS.includes(url.pathname)
+    || isGameEntry
+    || url.pathname.startsWith('/games/dandan-racing/');
   if (!isProtected) {
     return context.next();
   }
@@ -19,7 +24,7 @@ export async function onRequest(context) {
   const session = await readSession(context.request, context.env.SESSION_SECRET);
   if (session) return context.next();
 
-  if (url.pathname === '/main' || url.pathname === '/main.html') {
+  if (url.pathname === '/main' || url.pathname === '/main.html' || isGameEntry) {
     return Response.redirect(`${url.origin}/`, 302);
   }
 
