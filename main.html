@@ -8,10 +8,8 @@
     <meta property="og:title" content="深情俱乐部">
     <meta property="og:type" content="website">
     <title>深情俱乐部</title>
-    <link rel="stylesheet" href="main.css?v=12">
-    <link rel="stylesheet" href="zhao-game.css?v=3">
+    <link rel="stylesheet" href="main.css?v=13">
     <script src="main.js?v=12" defer></script>
-    <script src="zhao-game.js?v=3" type="module"></script>
   </head>
   <body class="session-loading">
     <main class="app-shell" aria-label="深情俱乐部主界面">
@@ -24,12 +22,12 @@
         </header>
 
         <div class="entertainment-content">
-          <button class="game-launcher" id="openZhaoGame" type="button" aria-label="打开赵云与阿斗">
+          <a class="game-launcher" href="https://essential.eu.cc" target="_blank" rel="noopener noreferrer" aria-label="在新窗口打开超级奥利奥">
             <span class="game-icon-crop">
-              <img src="assets/zhao-yun-a-dou-icon-v2.png" alt="" width="720" height="720">
+              <img src="assets/super-oreo-icon.webp" alt="" width="720" height="720">
             </span>
-            <span>赵云与阿斗</span>
-          </button>
+            <span>超级奥利奥</span>
+          </a>
         </div>
       </section>
 
@@ -341,9 +339,5 @@
         <div class="user-search-result" id="userSearchResult" hidden></div>
       </section>
     </div>
-    <section class="zhao-game" id="zhaoGame" aria-label="赵云与阿斗游戏" hidden>
-      <div class="zy-game-shell" id="zyGameShell"></div>
-      <p class="zy-live" id="zyLive" role="status" aria-live="polite"></p>
-    </section>
   </body>
 </html>

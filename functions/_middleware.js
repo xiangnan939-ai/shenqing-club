@@ -5,16 +5,13 @@ const PROTECTED_PATHS = [
   '/main.html',
   '/main.css',
   '/main.js',
-  '/zhao-game.css',
-  '/zhao-game.js',
-  '/assets/zhao-yun-a-dou-icon-v2.png',
-  '/assets/zhao-ink-landscape-v1.jpg',
+  '/assets/super-oreo-icon.webp',
   '/private/hero.png',
 ];
 
 export async function onRequest(context) {
   const url = new URL(context.request.url);
-  const isProtected = PROTECTED_PATHS.includes(url.pathname) || url.pathname.startsWith('/game/');
+  const isProtected = PROTECTED_PATHS.includes(url.pathname);
   if (!isProtected) {
     return context.next();
   }
