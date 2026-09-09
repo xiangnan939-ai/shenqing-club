@@ -27,6 +27,7 @@ export function serializeGameRoom(room, members, currentUserId) {
     status: room.status,
     trackIndex: Number(room.track_index) || 0,
     maxPlayers: Number(room.max_players) || GAME_LIMITS.maxPlayers,
+    aiCount: Math.max(0, Math.min(Number(room.ai_count ?? 5), GAME_LIMITS.maxPlayers - members.filter(member => ['joined','invited'].includes(member.status)).length)),
     hostId: Number(room.host_user_id),
     isHost: Number(room.host_user_id) === userId,
     expiresAt: room.expires_at,

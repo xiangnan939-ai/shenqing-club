@@ -12,7 +12,7 @@ async function readSave(db, userId) {
 export async function onRequestGet(context) {
   const { user, response } = await requireUser(context);
   if (response) return response;
-  return json({ ok: true, userId: Number(user.id), save: await readSave(context.env.DB, user.id) });
+  return json({ ok: true, userId: Number(user.id), nickname: user.nickname || user.username, save: await readSave(context.env.DB, user.id) });
 }
 
 export async function onRequestPut(context) {
@@ -34,7 +34,7 @@ export async function onRequestPut(context) {
       `INSERT INTO dandan_saves (user_id, revision, data_json)
        VALUES (?, 1, ?) ON CONFLICT(user_id) DO NOTHING`,
     ).bind(user.id, validated.dataJson).run();
-    if (Number(inserted.meta?.changes) === 1) {
+    if (Number(inserted.meta?.changes) > 0) {
       return json({ ok: true, save: await readSave(context.env.DB, user.id) }, 201);
     }
   } else {
@@ -42,7 +42,7 @@ export async function onRequestPut(context) {
       `UPDATE dandan_saves SET revision = revision + 1, data_json = ?,
        updated_at = CURRENT_TIMESTAMP WHERE user_id = ? AND revision = ?`,
     ).bind(validated.dataJson, user.id, revision).run();
-    if (Number(updated.meta?.changes) === 1) {
+    if (Number(updated.meta?.changes) > 0) {
       return json({ ok: true, save: await readSave(context.env.DB, user.id) });
     }
   }

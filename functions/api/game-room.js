@@ -148,6 +148,15 @@ async function updateRoom(context, user, input) {
   const room = await roomRecord(context.env.DB, roomId);
   const member = await membership(context.env.DB, roomId, user.id);
   if (!room || member?.status !== 'joined') return json({ error: '你不在这个房间中。' }, 403);
+  if (room.status !== 'waiting') return json({ error: '比赛开始后不能修改房间。' }, 409);
+  const isHost = Number(room.host_user_id) === Number(user.id);
+  if ((input.aiCount !== undefined || input.trackIndex !== undefined) && !isHost) {
+    return json({ error: '只有房主可以修改比赛设置。' }, 403);
+  }
+  const aiCount = input.aiCount === undefined ? null : parseGameIndex(input.aiCount, 5);
+  const trackIndex = input.trackIndex === undefined ? null : parseGameIndex(input.trackIndex);
+  if (input.aiCount !== undefined && aiCount === null) return json({ error: '电脑玩家数量不正确。' }, 400);
+  if (input.trackIndex !== undefined && trackIndex === null) return json({ error: '地图选择不正确。' }, 400);
   const carIndex = input.carIndex === undefined ? null : parseGameIndex(input.carIndex);
   if (input.carIndex !== undefined && carIndex === null) {
     return json({ error: '车辆选择不正确。' }, 400);
@@ -159,13 +168,11 @@ async function updateRoom(context, user, input) {
        last_seen_at = CURRENT_TIMESTAMP
      WHERE room_id = ? AND user_id = ?`,
   ).bind(ready, carIndex, roomId, user.id).run();
-  if (Number(room.host_user_id) === Number(user.id) && input.trackIndex !== undefined) {
-    const trackIndex = parseGameIndex(input.trackIndex);
-    if (trackIndex === null) return json({ error: '地图选择不正确。' }, 400);
+  if (isHost && (trackIndex !== null || aiCount !== null)) {
     await context.env.DB.prepare(
-      `UPDATE game_rooms SET track_index = ?, updated_at = CURRENT_TIMESTAMP,
+      `UPDATE game_rooms SET track_index = COALESCE(?, track_index), ai_count = COALESCE(?, ai_count), updated_at = CURRENT_TIMESTAMP,
        expires_at = ? WHERE id = ? AND status = 'waiting'`,
-    ).bind(trackIndex, futureIso(GAME_LIMITS.roomTtlMs), roomId).run();
+    ).bind(trackIndex, aiCount, futureIso(GAME_LIMITS.roomTtlMs), roomId).run();
   }
   return json({ ok: true, room: await loadRoom(context.env.DB, roomId, user.id) });
 }
@@ -207,6 +214,17 @@ async function leaveRoom(context, user, input) {
   return json({ ok: true });
 }
 
+async function completeRoom(context, user, input) {
+  const roomId = String(input.roomId || '');
+  const room = isRoomId(roomId) ? await roomRecord(context.env.DB, roomId) : null;
+  if (!room || Number(room.host_user_id) !== Number(user.id)) return json({error: '只有房主可以结束比赛。'},403);
+  if (room.status === 'racing') await context.env.DB.batch([
+    context.env.DB.prepare("UPDATE game_rooms SET status='waiting', updated_at=CURRENT_TIMESTAMP, expires_at=? WHERE id=? AND status='racing'").bind(futureIso(GAME_LIMITS.roomTtlMs),roomId),
+    context.env.DB.prepare("UPDATE game_room_members SET ready=CASE WHEN role='host' THEN 1 ELSE 0 END WHERE room_id=? AND status='joined'").bind(roomId),
+  ]);
+  return json({ok:true,room:await loadRoom(context.env.DB,roomId,user.id)});
+}
+
 export async function onRequestGet(context) {
   const { user, response } = await requireUser(context);
   if (response) return response;
@@ -239,6 +257,7 @@ export async function onRequestGet(context) {
   ).bind(user.id).all();
   return json({
     ok: true,
+    userId: Number(user.id),
     invitations: (result.results || []).map((invite) => ({
       roomId: invite.id,
       trackIndex: Number(invite.track_index) || 0,
@@ -265,6 +284,7 @@ export async function onRequestPost(context) {
     case 'respond': return respondToInvite(context, user, input);
     case 'update': return updateRoom(context, user, input);
     case 'start': return startRoom(context, user, input);
+    case 'complete': return completeRoom(context, user, input);
     case 'leave': return leaveRoom(context, user, input);
     default: return json({ error: '未知的房间操作。' }, 400);
   }
