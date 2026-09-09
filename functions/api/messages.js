@@ -34,10 +34,14 @@ export async function onRequestGet(context) {
        SELECT dm.id, dm.sender_id, dm.recipient_id, dm.body, dm.created_at, dm.read_at,
               dm.message_type, dm.attachment_id, dm.attachment_name,
               dm.attachment_size, dm.attachment_mime, dm.attachment_received_at,
+              dm.game_room_id, gr.status AS game_room_status,
+              gm.status AS game_member_status,
               CASE WHEN ma.id IS NULL THEN 0 ELSE 1 END AS attachment_available
        FROM direct_messages dm
        LEFT JOIN message_attachments ma
          ON ma.id = dm.attachment_id AND ma.expires_at > CURRENT_TIMESTAMP
+       LEFT JOIN game_rooms gr ON gr.id = dm.game_room_id
+       LEFT JOIN game_room_members gm ON gm.room_id = dm.game_room_id AND gm.user_id = dm.recipient_id
        WHERE (dm.sender_id = ? AND dm.recipient_id = ?)
           OR (dm.sender_id = ? AND dm.recipient_id = ?)
        ORDER BY dm.id DESC LIMIT 100

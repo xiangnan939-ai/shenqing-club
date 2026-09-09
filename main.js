@@ -476,6 +476,42 @@ function createFileMessage(message, mine) {
   return card;
 }
 
+function createGameInviteMessage(message, mine) {
+  const invite = message.gameInvite || {};
+  const card = document.createElement('div');
+  card.className = 'chat-game-invite';
+  const mark = document.createElement('span');
+  mark.className = 'chat-game-mark';
+  mark.innerHTML = '<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M8 12h8M12 8v8"></path><path d="M7.5 4.5h9a5 5 0 0 1 5 5v5a5 5 0 0 1-5 5h-9a5 5 0 0 1-5-5v-5a5 5 0 0 1 5-5Z"></path></svg>';
+  const copy = document.createElement('span');
+  copy.className = 'chat-game-copy';
+  const title = document.createElement('strong');
+  title.textContent = '蛋蛋飞车联机竞速';
+  const detail = document.createElement('span');
+  detail.textContent = invite.status === 'joined'
+    ? '已接受邀请并加入房间'
+    : invite.status === 'expired'
+      ? '邀请已失效'
+      : mine ? '等待好友接受邀请' : '好友邀请你一起比赛';
+  copy.append(title, detail);
+  card.append(mark, copy);
+  if (!mine && invite.status === 'pending' && invite.roomId) {
+    const accept = document.createElement('button');
+    accept.type = 'button';
+    accept.textContent = '接受并加入';
+    accept.addEventListener('click', () => {
+      window.location.href = `/games/dandan-racing/?room=${encodeURIComponent(invite.roomId)}`;
+    });
+    card.append(accept);
+  } else {
+    const status = document.createElement('span');
+    status.className = `chat-game-status is-${invite.status || 'expired'}`;
+    status.textContent = invite.status === 'joined' ? '已加入' : invite.status === 'pending' ? '等待中' : '已结束';
+    card.append(status);
+  }
+  return card;
+}
+
 function renderMessages(messages) {
   currentChatMessages = messages;
   const wasNearBottom = chatMessages.scrollHeight - chatMessages.scrollTop - chatMessages.clientHeight < 100;
@@ -484,9 +520,11 @@ function renderMessages(messages) {
     const bubble = document.createElement('article');
     const mine = Number(message.senderId) === Number(currentProfile.id);
     const isFile = message.type === 'file';
-    bubble.className = `chat-message${mine ? ' is-mine' : ''}${isFile ? ' is-file' : ''}`;
+    const isGameInvite = message.type === 'game-invite';
+    bubble.className = `chat-message${mine ? ' is-mine' : ''}${isFile ? ' is-file' : ''}${isGameInvite ? ' is-game-invite' : ''}`;
     if (isFile) bubble.append(createFileMessage(message, mine));
-    if (message.body) {
+    if (isGameInvite) bubble.append(createGameInviteMessage(message, mine));
+    if (message.body && !isGameInvite) {
       const body = document.createElement('p');
       body.className = isFile ? 'chat-file-caption' : '';
       body.textContent = message.body;

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><title>蛋蛋飞车 · DANDAN RACING</title><link rel="icon" href="lobby/driver.jpg"><link rel="stylesheet" href="style.css"><link rel="stylesheet" href="icons/remixicon.css"><link rel="stylesheet" href="lobby.css"></head>
+<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><title>蛋蛋飞车 · DANDAN RACING</title><link rel="icon" href="lobby/driver.jpg"><link rel="stylesheet" href="style.css"><link rel="stylesheet" href="icons/remixicon.css"><link rel="stylesheet" href="lobby.css"><link rel="stylesheet" href="online.css"></head>
 <body>
 <div id="lobby-backdrop" aria-hidden="true"></div>
 <canvas id="game" aria-label="3D 赛车场景"></canvas>
@@ -26,6 +26,7 @@
  <main class="lobby-stage">
   <section class="lobby-intro" aria-label="选择比赛模式"><div class="slogan-top"><h1>用漂移</h1><span>DANDAN RACING</span></div><h2>点亮每一段路</h2><p>小小的车轮，也能跑出大大的快乐！</p>
    <button id="start-btn" class="lobby-start"><i class="ri-flag-2-fill" aria-hidden="true"></i><span><b id="start-label">开始比赛</b><small id="start-en">RACE NOW</small></span><i class="ri-arrow-right-s-line start-arrow" aria-hidden="true"></i></button>
+   <button id="online-btn" class="lobby-online" hidden><i class="ri-global-fill" aria-hidden="true"></i><span><b>联机竞速</b><small>ONLINE RACE</small></span><i class="ri-arrow-right-s-line" aria-hidden="true"></i></button>
    <div class="lobby-modes" role="group" aria-label="驾驶模式"><button data-mode="race"><i class="ri-flag-2-fill" aria-hidden="true"></i><b>单机多人赛</b><small>RACE · 1 VS 5</small></button><button data-mode="drift"><i class="ri-steering-2-fill" aria-hidden="true"></i><b>个人练习赛</b><small>FREE PRACTICE</small></button></div><p id="mode-description" class="mode-description"></p>
   </section>
   <div class="lobby-car-caption"><span id="hero-car-class">YOUR MACHINE</span><b id="hero-car-name"></b><span>每一个弯，都有你的节奏。</span></div>
@@ -40,6 +41,22 @@
  </section>
  <footer class="lobby-footer"><span><b>DANDAN RACING</b><i>／</i><span class="footer-motto">DRIFT FOR A BRIGHTER TOMORROW</span></span><span id="footer-hints"></span><a class="site-return" href="../../main.html" aria-label="返回深情俱乐部"><i class="ri-arrow-left-line" aria-hidden="true"></i><span>返回深情俱乐部</span></a><button id="sound-toggle" aria-label="静音"><i class="ri-volume-up-fill" aria-hidden="true"></i></button></footer>
 </div>
+<section id="online-room" class="screen online-room hidden" aria-labelledby="online-title">
+ <header class="online-header"><button id="online-back" class="online-icon-button" aria-label="退出房间" title="退出房间"><i class="ri-arrow-left-line"></i></button><div><small>DANDAN RACING / P2P</small><h1 id="online-title">联机竞速</h1></div><span id="online-room-code" class="online-room-code"></span></header>
+ <main class="online-layout">
+  <section class="online-main-panel">
+   <div class="online-panel-heading"><div><small>RACE CREW</small><h2>参赛车手</h2></div><span id="online-room-status">正在建立房间</span></div>
+   <div id="online-slots" class="online-slots" aria-live="polite"></div>
+   <div class="online-race-settings">
+    <label>比赛地图<select id="online-track"></select></label>
+    <label>我的赛车<select id="online-car"></select></label>
+   </div>
+   <div class="online-actions"><button id="online-ready" class="online-secondary"><i class="ri-checkbox-circle-line"></i><span>准备</span></button><button id="online-start" class="online-primary" disabled><i class="ri-flag-2-fill"></i><span>等待玩家</span></button></div>
+   <p id="online-hint" class="online-hint">房主会临时负责比赛同步，地图和画面仍由每台电脑本地渲染。</p>
+  </section>
+  <aside class="online-friends-panel"><div class="online-panel-heading"><div><small>CLUB FRIENDS</small><h2>邀请好友</h2></div><button id="online-refresh" class="online-icon-button" aria-label="刷新好友" title="刷新好友"><i class="ri-refresh-line"></i></button></div><div id="online-friends" class="online-friends"></div></aside>
+ </main>
+</section>
 <div id="hud" class="screen hidden">
  <div class="race-top"><div class="position-block"><small id="position-label">SESSION SCORE</small><strong id="position">6<span>/ 6</span></strong><div id="position-caption">争夺领先</div></div><div class="lap-block"><span class="micro" id="lap-label">BEST CHAIN</span><strong id="lap">1 <span>/ 3</span></strong><div id="track-title">星港环线</div></div><div class="timing"><small id="time-label">自由练习</small><b id="time">00:00.000</b><span><span id="lap-time-label">最长漂移</span> <strong id="lap-time">00:00.000</strong></span></div><button id="pause-btn" class="pause-btn" aria-label="暂停游戏">Ⅱ</button></div>
  <div id="leaderboard" class="leaderboard"></div><div id="wrong-way" class="wrong-way hidden">↶ 逆向行驶 · 请调整方向</div>
@@ -50,4 +67,4 @@
 <div id="modal" class="modal hidden"><div class="modal-backdrop"></div><div id="modal-content" class="modal-content"></div></div>
 <div id="results" class="screen hidden"><div class="results-panel"><div class="eyebrow" id="result-eyebrow">SESSION COMPLETE / 漂移报告</div><h1 id="result-title">漂亮的冲线。</h1><p id="result-subtitle"></p><div class="result-hero"><div><span id="result-place-label">累计积分</span><strong id="result-place">01<small>/ 06</small></strong></div><div><span id="result-time-label">练习时长</span><b id="result-time"></b><em id="new-record"></em></div></div><div id="result-stats" class="result-stats"></div><div id="result-board"></div><div class="result-actions"><button id="result-menu" class="secondary-btn">返回大厅</button><button id="result-retry" class="primary-btn">再来一场 ↗</button></div></div></div>
 <div id="toast" role="status"></div>
-<script src="game.js"></script></body></html>
+<script>window.__DANDAN_ONLINE__=true;window.__DANDAN_CLOUD__=true;</script><script src="game.js"></script></body></html>

@@ -37,7 +37,9 @@ export function attachmentDisposition(fileName) {
 }
 
 export function serializeChatMessage(message) {
-  const type = message.message_type === 'file' ? 'file' : 'text';
+  const type = ['file', 'game_invite'].includes(message.message_type)
+    ? message.message_type.replace('_', '-')
+    : 'text';
   const receivedAt = message.attachment_received_at || '';
   const available = type === 'file' && Boolean(message.attachment_available) && !receivedAt;
   return {
@@ -48,6 +50,18 @@ export function serializeChatMessage(message) {
     body: message.body || '',
     createdAt: message.created_at,
     readAt: message.read_at || '',
+    ...(type === 'game-invite' ? {
+      gameInvite: {
+        roomId: message.game_room_id || '',
+        status: message.game_room_status !== 'waiting'
+          ? 'expired'
+          : message.game_member_status === 'joined'
+            ? 'joined'
+            : message.game_member_status === 'invited'
+              ? 'pending'
+              : 'expired',
+      },
+    } : {}),
     ...(type === 'file' ? {
       attachment: {
         id: message.attachment_id || '',

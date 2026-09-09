@@ -16,6 +16,8 @@ export async function onRequestGet(context) {
               (SELECT CASE
                         WHEN m.message_type = 'file'
                           THEN '文件：' || COALESCE(m.attachment_name, '未命名文件')
+                        WHEN m.message_type = 'game_invite'
+                          THEN '游戏邀请：蛋蛋飞车'
                         ELSE m.body
                       END
                FROM direct_messages m

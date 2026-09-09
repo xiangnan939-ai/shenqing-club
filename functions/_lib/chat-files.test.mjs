@@ -44,3 +44,22 @@ test('file message serialization distinguishes pending, received, and expired da
   assert.equal(serializeChatMessage({ ...base, attachment_available: 0, attachment_received_at: '2026-08-21 10:01:00' }).attachment.status, 'received');
   assert.equal(serializeChatMessage({ ...base, attachment_available: 0 }).attachment.status, 'expired');
 });
+
+test('game invitations expose only the room id and current invitation state', () => {
+  const base = {
+    id: 2,
+    sender_id: 3,
+    recipient_id: 4,
+    message_type: 'game_invite',
+    body: '邀请你加入游戏',
+    created_at: '2026-09-09 10:00:00',
+    game_room_id: 'room-1',
+    game_room_status: 'waiting',
+    game_member_status: 'invited',
+  };
+  const pending = serializeChatMessage(base);
+  assert.equal(pending.type, 'game-invite');
+  assert.deepEqual(pending.gameInvite, { roomId: 'room-1', status: 'pending' });
+  assert.equal(serializeChatMessage({ ...base, game_member_status: 'joined' }).gameInvite.status, 'joined');
+  assert.equal(serializeChatMessage({ ...base, game_room_status: 'closed' }).gameInvite.status, 'expired');
+});
