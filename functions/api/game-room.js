@@ -4,6 +4,7 @@ import {
   futureIso,
   GAME_LIMITS,
   isRoomId,
+  normalizeRoomCode,
   parseGameIndex,
   serializeGameRoom,
 } from '../_lib/game-online.js';
@@ -25,6 +26,25 @@ async function roomRecord(db, roomId) {
      WHERE id = ? AND status <> 'closed' AND datetime(expires_at) > CURRENT_TIMESTAMP
      LIMIT 1`,
   ).bind(roomId).first();
+}
+
+async function waitingRoomByCode(db, rawCode) {
+  const roomCode = normalizeRoomCode(rawCode);
+  if (!roomCode) return null;
+  if (roomCode.type === 'id') {
+    return db.prepare(
+      `SELECT * FROM game_rooms
+       WHERE id = ? AND status = 'waiting' AND datetime(expires_at) > CURRENT_TIMESTAMP
+       LIMIT 1`,
+    ).bind(roomCode.value).first();
+  }
+  const result = await db.prepare(
+    `SELECT * FROM game_rooms
+     WHERE lower(substr(id, 1, 8)) = ? AND status = 'waiting'
+       AND datetime(expires_at) > CURRENT_TIMESTAMP
+     ORDER BY created_at DESC LIMIT 2`,
+  ).bind(roomCode.value).all();
+  return result.results?.length === 1 ? result.results[0] : null;
 }
 
 async function membership(db, roomId, userId) {
@@ -140,6 +160,54 @@ async function respondToInvite(context, user, input) {
      WHERE room_id = ? AND user_id = ?`,
   ).bind(carIndex, roomId, user.id).run();
   return json({ ok: true, room: await loadRoom(context.env.DB, roomId, user.id) });
+}
+
+async function joinRoomByCode(context, user, input) {
+  const roomCode = normalizeRoomCode(input.roomCode);
+  if (!roomCode) return json({ error: '请输入正确的 8 位房间号。' }, 400);
+  const room = await waitingRoomByCode(context.env.DB, roomCode.value);
+  if (!room) return json({ error: '没有找到这个房间，请核对房间号。' }, 404);
+  const existing = await membership(context.env.DB, room.id, user.id);
+  if (Number(room.host_user_id) === Number(user.id) && existing?.status === 'joined') {
+    return json({
+      ok: true,
+      userId: Number(user.id),
+      room: await loadRoom(context.env.DB, room.id, user.id),
+    });
+  }
+  const count = await context.env.DB.prepare(
+    `SELECT COUNT(*) AS count FROM game_room_members
+     WHERE room_id = ? AND status IN ('invited', 'joined')`,
+  ).bind(room.id).first();
+  if (!existing || !['invited', 'joined'].includes(existing.status)) {
+    if (Number(count?.count) >= GAME_LIMITS.maxPlayers) {
+      return json({ error: '房间已满。' }, 409);
+    }
+  }
+  const carIndex = parseGameIndex(input.carIndex) ?? 0;
+  await context.env.DB.batch([
+    context.env.DB.prepare(
+      `UPDATE game_rooms SET status = 'closed', updated_at = CURRENT_TIMESTAMP
+       WHERE host_user_id = ? AND id <> ? AND status <> 'closed'`,
+    ).bind(user.id, room.id),
+    context.env.DB.prepare(
+      `UPDATE game_room_members SET status = 'left', ready = 0
+       WHERE user_id = ? AND room_id <> ? AND role = 'guest' AND status = 'joined'`,
+    ).bind(user.id, room.id),
+    context.env.DB.prepare(
+      `INSERT INTO game_room_members
+       (room_id, user_id, role, status, ready, car_index, joined_at, last_seen_at)
+       VALUES (?, ?, 'guest', 'joined', 0, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+       ON CONFLICT(room_id, user_id) DO UPDATE SET
+         status = 'joined', ready = 0, car_index = excluded.car_index,
+         joined_at = CURRENT_TIMESTAMP, last_seen_at = CURRENT_TIMESTAMP`,
+    ).bind(room.id, user.id, carIndex),
+  ]);
+  return json({
+    ok: true,
+    userId: Number(user.id),
+    room: await loadRoom(context.env.DB, room.id, user.id),
+  });
 }
 
 async function updateRoom(context, user, input) {
@@ -282,6 +350,7 @@ export async function onRequestPost(context) {
     case 'create': return createRoom(context, user, input);
     case 'invite': return inviteFriend(context, user, input);
     case 'respond': return respondToInvite(context, user, input);
+    case 'join': return joinRoomByCode(context, user, input);
     case 'update': return updateRoom(context, user, input);
     case 'start': return startRoom(context, user, input);
     case 'complete': return completeRoom(context, user, input);

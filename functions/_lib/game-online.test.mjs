@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { isRoomId, parseGameIndex, serializeGameRoom } from './game-online.js';
+import { isRoomId, normalizeRoomCode, parseGameIndex, serializeGameRoom } from './game-online.js';
 
 test('game indexes accept only the five bundled maps and cars', () => {
   assert.equal(parseGameIndex(0), 0);
@@ -12,6 +12,15 @@ test('game indexes accept only the five bundled maps and cars', () => {
 test('room ids require a UUID v4 value', () => {
   assert.equal(isRoomId('123e4567-e89b-42d3-a456-426614174000'), true);
   assert.equal(isRoomId('../main'), false);
+});
+
+test('room codes accept the displayed eight characters or a complete room id', () => {
+  assert.deepEqual(normalizeRoomCode('  房间 70C0DC6D  '), { type: 'short', value: '70c0dc6d' });
+  assert.deepEqual(normalizeRoomCode('123e4567-e89b-42d3-a456-426614174000'), {
+    type: 'id',
+    value: '123e4567-e89b-42d3-a456-426614174000',
+  });
+  assert.equal(normalizeRoomCode('not-a-room'), null);
 });
 
 test('serialized rooms expose gameplay state without account secrets', () => {

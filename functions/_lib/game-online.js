@@ -16,6 +16,17 @@ export function isRoomId(value) {
     .test(String(value || ''));
 }
 
+export function normalizeRoomCode(value) {
+  const normalized = String(value || '')
+    .trim()
+    .replace(/^房间\s*[:：]?\s*/u, '')
+    .toLowerCase();
+  if (isRoomId(normalized)) return { type: 'id', value: normalized };
+  const shortCode = normalized.replaceAll('-', '');
+  if (/^[0-9a-f]{8}$/u.test(shortCode)) return { type: 'short', value: shortCode };
+  return null;
+}
+
 export function futureIso(milliseconds) {
   return new Date(Date.now() + milliseconds).toISOString();
 }
